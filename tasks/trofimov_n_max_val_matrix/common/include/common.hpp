@@ -2,13 +2,14 @@
 
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "task/include/task.hpp"
 
 namespace trofimov_n_max_val_matrix {
 
-using InType = int;
-using OutType = int;
+using InType = std::vector<std::vector<int>>;
+using OutType = std::vector<int>;
 using TestType = std::tuple<int, std::string>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 

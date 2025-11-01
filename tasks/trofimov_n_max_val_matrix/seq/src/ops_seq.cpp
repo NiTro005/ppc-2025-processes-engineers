@@ -11,50 +11,58 @@ namespace trofimov_n_max_val_matrix {
 TrofimovNMaxValMatrixSEQ::TrofimovNMaxValMatrixSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput() = 0;
+  GetOutput() = std::vector<int>();
 }
 
 bool TrofimovNMaxValMatrixSEQ::ValidationImpl() {
-  return (GetInput() > 0) && (GetOutput() == 0);
+  if (GetInput().empty()) {
+    return false;
+  }
+  
+  size_t cols = GetInput()[0].size();
+  for (const auto& row : GetInput()) {
+    if (row.size() != cols) {
+      return false;
+    }
+  }
+  
+  return GetOutput().empty();
 }
 
 bool TrofimovNMaxValMatrixSEQ::PreProcessingImpl() {
-  GetOutput() = 2 * GetInput();
-  return GetOutput() > 0;
+  GetOutput() = std::vector<int>(GetInput().size(), 0);
+  return !GetOutput().empty();
 }
 
 bool TrofimovNMaxValMatrixSEQ::RunImpl() {
-  if (GetInput() == 0) {
+  if (GetInput().empty()) {
     return false;
   }
 
-  for (InType i = 0; i < GetInput(); i++) {
-    for (InType j = 0; j < GetInput(); j++) {
-      for (InType k = 0; k < GetInput(); k++) {
-        std::vector<InType> tmp(i + j + k, 1);
-        GetOutput() += std::accumulate(tmp.begin(), tmp.end(), 0);
-        GetOutput() -= i + j + k;
-      }
+  for (size_t i = 0; i < GetInput().size(); i++) {
+    if (!GetInput()[i].empty()) {
+      GetOutput()[i] = *std::max_element(GetInput()[i].begin(), GetInput()[i].end());
     }
   }
 
   const int num_threads = ppc::util::GetNumThreads();
-  GetOutput() *= num_threads;
-
+  
   int counter = 0;
   for (int i = 0; i < num_threads; i++) {
     counter++;
   }
 
   if (counter != 0) {
-    GetOutput() /= counter;
+    for (auto& val : GetOutput()) {
+      val = val * num_threads / counter;
+    }
   }
-  return GetOutput() > 0;
+  
+  return !GetOutput().empty();
 }
 
 bool TrofimovNMaxValMatrixSEQ::PostProcessingImpl() {
-  GetOutput() -= GetInput();
-  return GetOutput() > 0;
+  return !GetOutput().empty();
 }
 
 }  // namespace trofimov_n_max_val_matrix
