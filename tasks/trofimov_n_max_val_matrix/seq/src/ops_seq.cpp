@@ -44,19 +44,6 @@ bool TrofimovNMaxValMatrixSEQ::RunImpl() {
       GetOutput()[i] = *std::max_element(GetInput()[i].begin(), GetInput()[i].end());
     }
   }
-
-  const int num_threads = ppc::util::GetNumThreads();
-  
-  int counter = 0;
-  for (int i = 0; i < num_threads; i++) {
-    counter++;
-  }
-
-  if (counter != 0) {
-    for (auto& val : GetOutput()) {
-      val = val * num_threads / counter;
-    }
-  }
   
   return !GetOutput().empty();
 }

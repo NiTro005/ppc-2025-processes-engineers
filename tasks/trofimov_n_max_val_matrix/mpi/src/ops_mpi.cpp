@@ -90,19 +90,7 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
 
   MPI_Bcast(GetOutput().data(), rows, MPI_INT, 0, MPI_COMM_WORLD);
 
-  const int num_threads = ppc::util::GetNumThreads();
-  int counter = 0;
-  for (int i = 0; i < num_threads; i++) {
-    counter++;
-  }
-
-  if (counter != 0) {
-    for (auto& val : GetOutput()) {
-      val = val * num_threads / counter;
-    }
-  }
-
-  return !GetOutput().empty();
+  return rank == 0 ? !GetOutput().empty() : true;
 }
 
 bool TrofimovNMaxValMatrixMPI::PostProcessingImpl() {
