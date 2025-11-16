@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include <string>
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <string>
 #include <tuple>
 #include <utility>
 #include <vector>
