@@ -13,7 +13,7 @@
 namespace trofimov_n_max_val_matrix {
 
 namespace {
-constexpr int kDefaultMatrixSize = 100;
+constexpr int kDefaultMatrixSize = 1000;
 }  // namespace
 
 class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
@@ -44,14 +44,6 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    int world_rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
-    // Только процесс с рангом 0 проверяет результаты
-    if (world_rank != 0) {
-      return true;
-    }
-
     if (output_data.size() != expected_output_.size()) {
       return false;
     }
