@@ -2,9 +2,9 @@
 
 #include <mpi.h>
 
-#include <tuple>
 #include <algorithm>
 #include <cstddef>
+#include <tuple>
 #include <vector>
 
 #include "trofimov_n_max_val_matrix/common/include/common.hpp"
