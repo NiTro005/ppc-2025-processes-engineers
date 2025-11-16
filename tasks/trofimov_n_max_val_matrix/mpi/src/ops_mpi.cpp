@@ -78,8 +78,7 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
     GetOutput().resize(rows);
   }
 
-  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, 
-              GetOutput().data(), recv_counts.data(), displacements.data(),
+  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, GetOutput().data(), recv_counts.data(), displacements.data(),
               MPI_INT, 0, MPI_COMM_WORLD);
 
   return true;
@@ -88,11 +87,11 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
 bool TrofimovNMaxValMatrixMPI::PostProcessingImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   if (rank == 0) {
     return !GetOutput().empty();
   }
-  
+
   return true;
 }
 

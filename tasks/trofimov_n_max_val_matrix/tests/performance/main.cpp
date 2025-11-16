@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <vector>
@@ -23,7 +24,7 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
     for (int i = 0; i < kMatrixSize_; ++i) {
       std::vector<int> row;
       row.reserve(kMatrixSize_);
-      
+
       for (int j = 0; j < kMatrixSize_; ++j) {
         row.push_back((i * kMatrixSize_) + j);
       }
