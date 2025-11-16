@@ -52,19 +52,14 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
   const int rows_per_process = static_cast<int>(rows) / size;
   const int remainder = static_cast<int>(rows) % size;
 
-  const int start_row = (rank * rows_per_process) + std::min(rank, remainder);
-  const int end_row = start_row + rows_per_process + (rank < remainder ? 1 : 0);
+  const int start_row = rank * rows_per_process + std::min(rank, remainder);
+  const int end_row = (rank + 1) * rows_per_process + std::min(rank + 1, remainder);
   const int local_rows = end_row - start_row;
 
   std::vector<int> local_maxima(local_rows);
   for (int i = 0; i < local_rows; i++) {
     const int global_row_index = start_row + i;
-    local_maxima[i] = *std::max_element(input[global_row_index].begin(), input[global_row_index].end());
-  }
-
-  std::vector<int> all_maxima;
-  if (rank == 0) {
-    all_maxima.resize(rows);
+    local_maxima[i] = *std::ranges::max_element(input[global_row_index]);
   }
 
   std::vector<int> recv_counts(size);
@@ -79,43 +74,26 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
     }
   }
 
-  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, all_maxima.data(), recv_counts.data(), displacements.data(),
+  if (rank == 0) {
+    GetOutput().resize(rows);
+  }
+
+  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, 
+              GetOutput().data(), recv_counts.data(), displacements.data(),
               MPI_INT, 0, MPI_COMM_WORLD);
 
-  if (rank == 0) {
-    GetOutput() = all_maxima;
-  } else {
-    GetOutput().clear();
-  }
-
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  const int rows_int = static_cast<int>(rows);
-  if (rank == 0) {
-    MPI_Bcast(GetOutput().data(), rows_int, MPI_INT, 0, MPI_COMM_WORLD);
-  } else {
-    GetOutput().resize(rows);
-    MPI_Bcast(GetOutput().data(), rows_int, MPI_INT, 0, MPI_COMM_WORLD);
-  }
-
-  return rank == 0 ? !GetOutput().empty() : true;
+  return true;
 }
 
 bool TrofimovNMaxValMatrixMPI::PostProcessingImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  bool success = true;
-
+  
   if (rank == 0) {
-    success = !GetOutput().empty();
+    return !GetOutput().empty();
   }
-
-  int success_int = success ? 1 : 0;
-  MPI_Bcast(&success_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  success = (success_int != 0);
-
-  return success;
+  
+  return true;
 }
 
 }  // namespace trofimov_n_max_val_matrix

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-
 #include <algorithm>
+#include <cstddef>
 #include <vector>
 
 #include "trofimov_n_max_val_matrix/common/include/common.hpp"
@@ -13,8 +13,8 @@ namespace trofimov_n_max_val_matrix {
 class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
   const int kMatrixSize_ = 100;
 
-  InType input_data_{};
-  OutType expected_output_{};
+  InType input_data_;
+  OutType expected_output_;
 
   void SetUp() override {
     input_data_.clear();
@@ -22,12 +22,14 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
 
     for (int i = 0; i < kMatrixSize_; ++i) {
       std::vector<int> row;
+      row.reserve(kMatrixSize_);
+      
       for (int j = 0; j < kMatrixSize_; ++j) {
-        row.push_back(i * kMatrixSize_ + j);
+        row.push_back((i * kMatrixSize_) + j);
       }
       input_data_.push_back(row);
 
-      int expected_max = *std::max_element(row.begin(), row.end());
+      int expected_max = *std::ranges::max_element(row);
       expected_output_.push_back(expected_max);
     }
   }
@@ -37,7 +39,7 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
       return false;
     }
 
-    for (size_t i = 0; i < expected_output_.size(); ++i) {
+    for (std::size_t i = 0; i < expected_output_.size(); ++i) {
       if (output_data[i] != expected_output_[i]) {
         return false;
       }

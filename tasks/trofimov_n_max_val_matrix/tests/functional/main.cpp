@@ -1,15 +1,10 @@
 #include <gtest/gtest.h>
-
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "trofimov_n_max_val_matrix/common/include/common.hpp"
-#include "trofimov_n_max_val_matrix/mpi/include/ops_mpi.hpp"
-#include "trofimov_n_max_val_matrix/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
 
 namespace trofimov_n_max_val_matrix {

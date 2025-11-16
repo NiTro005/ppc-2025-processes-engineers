@@ -41,7 +41,7 @@ bool TrofimovNMaxValMatrixSEQ::RunImpl() {
 
   for (std::size_t i = 0; i < GetInput().size(); i++) {
     if (!GetInput()[i].empty()) {
-      GetOutput()[i] = *std::max_element(GetInput()[i].begin(), GetInput()[i].end());
+      GetOutput()[i] = *std::ranges::max_element(GetInput()[i]);
     }
   }
 
