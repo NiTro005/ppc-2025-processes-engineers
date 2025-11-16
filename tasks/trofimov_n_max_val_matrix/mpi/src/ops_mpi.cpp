@@ -16,7 +16,7 @@ constexpr int kRootRank = 0;
 
 TrofimovNMaxValMatrixMPI::TrofimovNMaxValMatrixMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
-  GetInput() = in;
+  GetInput() = InType(in.begin(), in.end());
   GetOutput() = OutType();
 }
 
