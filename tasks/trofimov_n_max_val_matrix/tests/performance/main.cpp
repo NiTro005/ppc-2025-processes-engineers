@@ -18,46 +18,38 @@ constexpr int kDefaultMatrixSize = 100;
 
 class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
-  const int kMatrixSize_ = kDefaultMatrixSize;
+  const int k_matrix_size = kDefaultMatrixSize;
 
-  InType input_data_;
-  OutType expected_output_;
+  InType input_data;
+  OutType expected_output;
 
   void SetUp() override {
-    input_data_.clear();
-    expected_output_.clear();
+    input_data.clear();
+    expected_output.clear();
 
-    input_data_.reserve(static_cast<std::size_t>(kMatrixSize_));
-    expected_output_.reserve(static_cast<std::size_t>(kMatrixSize_));
+    input_data.reserve(static_cast<std::size_t>(k_matrix_size));
+    expected_output.reserve(static_cast<std::size_t>(k_matrix_size));
 
-    for (int i = 0; i < kMatrixSize_; ++i) {
+    for (int i = 0; i < k_matrix_size; ++i) {
       std::vector<int> row;
-      row.reserve(static_cast<std::size_t>(kMatrixSize_));
+      row.reserve(static_cast<std::size_t>(k_matrix_size));
 
-      for (int j = 0; j < kMatrixSize_; ++j) {
-        row.push_back((i * kMatrixSize_) + j);
+      for (int j = 0; j < k_matrix_size; ++j) {
+        row.push_back((i * k_matrix_size) + j);
       }
-      input_data_.push_back(row);
+      input_data.push_back(row);
 
-      expected_output_.push_back(*std::ranges::max_element(input_data_.back()));
+      expected_output.push_back(*std::ranges::max_element(input_data.back()));
     }
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    int world_rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
-    // Только процесс с рангом 0 проверяет результаты
-    if (world_rank != 0) {
-      return true;
-    }
-
-    if (output_data.size() != expected_output_.size()) {
+    if (output_data.size() != expected_output.size()) {
       return false;
     }
 
-    for (std::size_t i = 0; i < expected_output_.size(); ++i) {
-      if (output_data[i] != expected_output_[i]) {
+    for (std::size_t i = 0; i < expected_output.size(); ++i) {
+      if (output_data[i] != expected_output[i]) {
         return false;
       }
     }
@@ -65,7 +57,7 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
   }
 
   InType GetTestInputData() final {
-    return input_data_;
+    return input_data;
   }
 };
 

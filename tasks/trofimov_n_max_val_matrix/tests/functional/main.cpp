@@ -49,11 +49,16 @@ class TrofimovNRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    int world_rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+    int mpi_initialized = 0;
+    MPI_Initialized(&mpi_initialized);
 
-    if (world_rank != 0) {
-      return true;
+    if (mpi_initialized) {
+      int world_rank = 0;
+      MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+      if (world_rank != 0) {
+        return true;
+      }
     }
 
     if (output_data.size() != expected_output_.size()) {
