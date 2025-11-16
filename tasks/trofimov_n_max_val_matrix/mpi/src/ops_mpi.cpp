@@ -13,7 +13,7 @@ namespace trofimov_n_max_val_matrix {
 TrofimovNMaxValMatrixMPI::TrofimovNMaxValMatrixMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput() = std::vector<int>();
+  GetOutput().clear();
 }
 
 bool TrofimovNMaxValMatrixMPI::ValidationImpl() {

@@ -11,7 +11,7 @@ namespace trofimov_n_max_val_matrix {
 TrofimovNMaxValMatrixSEQ::TrofimovNMaxValMatrixSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput() = std::vector<int>();
+  GetOutput().clear();
 }
 
 bool TrofimovNMaxValMatrixSEQ::ValidationImpl() {
