@@ -99,8 +99,7 @@ const std::array<TestType, 6> kTestParam = {
 
 const auto kTestTasksList = std::tuple_cat(
     ppc::util::AddFuncTask<TrofimovNMaxValMatrixMPI, InType>(kTestParam, PPC_SETTINGS_trofimov_n_max_val_matrix),
-    ppc::util::AddFuncTask<TrofimovNMaxValMatrixSEQ, InType>(kTestParam, PPC_SETTINGS_trofimov_n_max_val_matrix)
-);
+    ppc::util::AddFuncTask<TrofimovNMaxValMatrixSEQ, InType>(kTestParam, PPC_SETTINGS_trofimov_n_max_val_matrix));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 
