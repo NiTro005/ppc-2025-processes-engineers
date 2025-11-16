@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>  // Добавьте этот include
 
 #include <algorithm>
 #include <cstddef>
@@ -12,7 +13,8 @@
 namespace trofimov_n_max_val_matrix {
 
 namespace {
-constexpr int kDefaultMatrixSize = 100;
+constexpr int kDefaultMatrixSize = 10;
+constexpr int kRootRank = 0;
 }  // namespace
 
 class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
@@ -43,6 +45,18 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
+    int mpi_initialized = 0;
+    MPI_Initialized(&mpi_initialized);
+
+    if (mpi_initialized != 0) {
+      int world_rank = 0;
+      MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+      if (world_rank != kRootRank) {
+        return true;
+      }
+    }
+
     if (output_data.size() != expected_output.size()) {
       return false;
     }

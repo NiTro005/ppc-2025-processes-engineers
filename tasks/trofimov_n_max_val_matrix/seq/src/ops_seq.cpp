@@ -30,16 +30,19 @@ bool TrofimovNMaxValMatrixSEQ::ValidationImpl() {
 }
 
 bool TrofimovNMaxValMatrixSEQ::PreProcessingImpl() {
-  GetOutput() = std::vector<int>(GetInput().size(), 0);
-  return !GetOutput().empty();
+  GetOutput().resize(GetInput().size());
+  return true;
 }
 
 bool TrofimovNMaxValMatrixSEQ::RunImpl() {
   const auto &input = GetInput();
+  auto &output = GetOutput();
 
   for (std::size_t i = 0; i < input.size(); ++i) {
     if (!input[i].empty()) {
-      GetOutput()[i] = *std::ranges::max_element(input[i]);
+      output[i] = *std::ranges::max_element(input[i]);
+    } else {
+      output[i] = 0;
     }
   }
 
