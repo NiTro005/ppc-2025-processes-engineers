@@ -10,6 +10,10 @@
 
 namespace trofimov_n_max_val_matrix {
 
+namespace {
+constexpr int kRootRank = 0;
+}  // namespace
+
 TrofimovNMaxValMatrixMPI::TrofimovNMaxValMatrixMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
@@ -21,7 +25,7 @@ bool TrofimovNMaxValMatrixMPI::ValidationImpl() {
     return false;
   }
 
-  std::size_t cols = GetInput()[0].size();
+  const std::size_t cols = GetInput()[0].size();
   for (const auto &row : GetInput()) {
     if (row.size() != cols) {
       return false;
@@ -37,49 +41,47 @@ bool TrofimovNMaxValMatrixMPI::PreProcessingImpl() {
 }
 
 bool TrofimovNMaxValMatrixMPI::RunImpl() {
-  auto &input = GetInput();
-  if (input.empty()) {
-    return false;
-  }
+  const auto &input = GetInput();
 
   int rank = 0;
   int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  const std::size_t rows = input.size();
-
-  const int rows_per_process = static_cast<int>(rows) / size;
-  const int remainder = static_cast<int>(rows) % size;
+  const auto rows = static_cast<int>(input.size());
+  const int rows_per_process = rows / size;
+  const int remainder = rows % size;
 
   const int start_row = (rank * rows_per_process) + std::min(rank, remainder);
   const int end_row = ((rank + 1) * rows_per_process) + std::min(rank + 1, remainder);
   const int local_rows = end_row - start_row;
 
-  std::vector<int> local_maxima(local_rows);
-  for (int i = 0; i < local_rows; i++) {
+  std::vector<int> local_maxima(static_cast<std::size_t>(local_rows));
+  for (int i = 0; i < local_rows; ++i) {
     const int global_row_index = start_row + i;
-    local_maxima[i] = *std::ranges::max_element(input[global_row_index]);
+    local_maxima[static_cast<std::size_t>(i)] =
+        *std::ranges::max_element(input[static_cast<std::size_t>(global_row_index)]);
   }
 
-  std::vector<int> recv_counts(size);
-  std::vector<int> displacements(size);
+  std::vector<int> recv_counts(static_cast<std::size_t>(size));
+  std::vector<int> displacements(static_cast<std::size_t>(size));
 
-  MPI_Gather(&local_rows, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gather(&local_rows, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, kRootRank, MPI_COMM_WORLD);
 
-  if (rank == 0) {
+  if (rank == kRootRank) {
     displacements[0] = 0;
-    for (int i = 1; i < size; i++) {
-      displacements[i] = displacements[i - 1] + recv_counts[i - 1];
+    for (int i = 1; i < size; ++i) {
+      displacements[static_cast<std::size_t>(i)] =
+          displacements[static_cast<std::size_t>(i - 1)] + recv_counts[static_cast<std::size_t>(i - 1)];
     }
   }
 
-  if (rank == 0) {
-    GetOutput().resize(rows);
+  if (rank == kRootRank) {
+    GetOutput().resize(static_cast<std::size_t>(rows));
   }
 
   MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, GetOutput().data(), recv_counts.data(), displacements.data(),
-              MPI_INT, 0, MPI_COMM_WORLD);
+              MPI_INT, kRootRank, MPI_COMM_WORLD);
 
   return true;
 }
@@ -88,7 +90,7 @@ bool TrofimovNMaxValMatrixMPI::PostProcessingImpl() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  if (rank == 0) {
+  if (rank == kRootRank) {
     return !GetOutput().empty();
   }
 
