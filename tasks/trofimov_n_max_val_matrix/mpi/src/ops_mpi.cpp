@@ -2,11 +2,11 @@
 
 #include <mpi.h>
 
-#include <numeric>
+#include <algorithm>
+#include <cstddef>
 #include <vector>
 
 #include "trofimov_n_max_val_matrix/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace trofimov_n_max_val_matrix {
 
@@ -21,7 +21,7 @@ bool TrofimovNMaxValMatrixMPI::ValidationImpl() {
     return false;
   }
 
-  size_t cols = GetInput()[0].size();
+  std::size_t cols = GetInput()[0].size();
   for (const auto &row : GetInput()) {
     if (row.size() != cols) {
       return false;
@@ -42,16 +42,17 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
     return false;
   }
 
-  int rank, size;
+  int rank = 0;
+  int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  const int rows = input.size();
+  const std::size_t rows = input.size();
 
   int rows_per_process = rows / size;
   int remainder = rows % size;
 
-  int start_row = rank * rows_per_process + std::min(rank, remainder);
+  const int start_row = (rank * rows_per_process) + std::min(rank, remainder);
   int end_row = start_row + rows_per_process + (rank < remainder ? 1 : 0);
   int local_rows = end_row - start_row;
 
