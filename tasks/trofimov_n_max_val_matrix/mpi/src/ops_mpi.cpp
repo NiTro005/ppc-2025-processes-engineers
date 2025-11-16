@@ -52,8 +52,8 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
   const int rows_per_process = static_cast<int>(rows) / size;
   const int remainder = static_cast<int>(rows) % size;
 
-  const int start_row = rank * rows_per_process + std::min(rank, remainder);
-  const int end_row = (rank + 1) * rows_per_process + std::min(rank + 1, remainder);
+  const int start_row = (rank * rows_per_process) + std::min(rank, remainder);
+  const int end_row = ((rank + 1) * rows_per_process) + std::min(rank + 1, remainder);
   const int local_rows = end_row - start_row;
 
   std::vector<int> local_maxima(local_rows);
