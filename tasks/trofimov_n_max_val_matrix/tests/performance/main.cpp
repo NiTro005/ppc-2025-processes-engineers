@@ -11,7 +11,7 @@
 namespace trofimov_n_max_val_matrix {
 
 class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kMatrixSize_ = 10;
+  const int kMatrixSize_ = 100;
   
   InType input_data_{};
   OutType expected_output_{};
