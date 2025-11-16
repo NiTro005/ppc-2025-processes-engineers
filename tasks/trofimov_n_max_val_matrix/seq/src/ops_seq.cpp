@@ -19,7 +19,7 @@ bool TrofimovNMaxValMatrixSEQ::ValidationImpl() {
     return false;
   }
 
-  std::size_t cols = GetInput()[0].size();
+  const std::size_t cols = GetInput()[0].size();
   for (const auto &row : GetInput()) {
     if (row.size() != cols) {
       return false;
@@ -35,17 +35,15 @@ bool TrofimovNMaxValMatrixSEQ::PreProcessingImpl() {
 }
 
 bool TrofimovNMaxValMatrixSEQ::RunImpl() {
-  if (GetInput().empty()) {
-    return false;
-  }
+  const auto &input = GetInput();
 
-  for (std::size_t i = 0; i < GetInput().size(); i++) {
-    if (!GetInput()[i].empty()) {
-      GetOutput()[i] = *std::ranges::max_element(GetInput()[i]);
+  for (std::size_t i = 0; i < input.size(); ++i) {
+    if (!input[i].empty()) {
+      GetOutput()[i] = *std::ranges::max_element(input[i]);
     }
   }
 
-  return !GetOutput().empty();
+  return true;
 }
 
 bool TrofimovNMaxValMatrixSEQ::PostProcessingImpl() {

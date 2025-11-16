@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -11,8 +12,13 @@
 
 namespace trofimov_n_max_val_matrix {
 
+namespace {
+constexpr int kDefaultMatrixSize = 100;
+}  // namespace
+
 class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kMatrixSize_ = 100;
+ protected:
+  const int kMatrixSize_ = kDefaultMatrixSize;
 
   InType input_data_;
   OutType expected_output_;
@@ -21,22 +27,32 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
     input_data_.clear();
     expected_output_.clear();
 
+    input_data_.reserve(static_cast<std::size_t>(kMatrixSize_));
+    expected_output_.reserve(static_cast<std::size_t>(kMatrixSize_));
+
     for (int i = 0; i < kMatrixSize_; ++i) {
       std::vector<int> row;
-      row.reserve(kMatrixSize_);
+      row.reserve(static_cast<std::size_t>(kMatrixSize_));
 
       for (int j = 0; j < kMatrixSize_; ++j) {
         row.push_back((i * kMatrixSize_) + j);
       }
       input_data_.push_back(row);
 
-      int expected_max = *std::ranges::max_element(row);
-      expected_output_.push_back(expected_max);
+      expected_output_.push_back(*std::ranges::max_element(input_data_.back()));
     }
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    if (output_data.empty() || output_data.size() != expected_output_.size()) {
+    int world_rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    // Только процесс с рангом 0 проверяет результаты
+    if (world_rank != 0) {
+      return true;
+    }
+
+    if (output_data.size() != expected_output_.size()) {
       return false;
     }
 

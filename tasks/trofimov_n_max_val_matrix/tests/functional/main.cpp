@@ -89,6 +89,7 @@ const std::array<TestType, 6> kTestParam = {
 
     std::make_tuple(std::vector<std::vector<int>>{{-1, -5, -3}, {-9, -2, -7}}, std::vector<int>{-1, -2}),
 
+<<<<<<< HEAD
     std::make_tuple(std::vector<std::vector<int>>{{5, 9, 1, 10, 4}}, std::vector<int>{10}),
 
     std::make_tuple(std::vector<std::vector<int>>{{9, 9, 9}, {9, 9, 9}}, std::vector<int>{9, 9}),
@@ -96,6 +97,15 @@ const std::array<TestType, 6> kTestParam = {
     std::make_tuple(std::vector<std::vector<int>>{{1, 5, 1}, {3, 3, 4}}, std::vector<int>{5, 4}),
 
     std::make_tuple(std::vector<std::vector<int>>{{50}}, std::vector<int>{50})};
+=======
+    std::make_tuple(std::vector<std::vector<int>>{{5, 8, 2, 10, 1}}, std::vector<int>{10}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{7, 7, 7}, {7, 7, 7}}, std::vector<int>{7, 7}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{1, 5, 1}, {3, 3, 4}}, std::vector<int>{5, 4}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{42}}, std::vector<int>{42})};
+>>>>>>> 849517806bb635d7fa86e17410cc36d4f2451864
 
 const auto kTestTasksList = std::tuple_cat(
     ppc::util::AddFuncTask<TrofimovNMaxValMatrixMPI, InType>(kTestParam, PPC_SETTINGS_trofimov_n_max_val_matrix),
