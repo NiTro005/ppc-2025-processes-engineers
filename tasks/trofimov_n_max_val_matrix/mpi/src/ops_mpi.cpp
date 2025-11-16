@@ -20,14 +20,14 @@ bool TrofimovNMaxValMatrixMPI::ValidationImpl() {
   if (GetInput().empty()) {
     return false;
   }
-  
+
   size_t cols = GetInput()[0].size();
-  for (const auto& row : GetInput()) {
+  for (const auto &row : GetInput()) {
     if (row.size() != cols) {
       return false;
     }
   }
-  
+
   return GetOutput().empty();
 }
 
@@ -37,7 +37,7 @@ bool TrofimovNMaxValMatrixMPI::PreProcessingImpl() {
 }
 
 bool TrofimovNMaxValMatrixMPI::RunImpl() {
-  auto& input = GetInput();
+  auto &input = GetInput();
   if (input.empty()) {
     return false;
   }
@@ -50,7 +50,7 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
 
   int rows_per_process = rows / size;
   int remainder = rows % size;
-  
+
   int start_row = rank * rows_per_process + std::min(rank, remainder);
   int end_row = start_row + rows_per_process + (rank < remainder ? 1 : 0);
   int local_rows = end_row - start_row;
@@ -59,8 +59,7 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
   for (int i = 0; i < local_rows; i++) {
     int global_row_index = start_row + i;
     if (!input[global_row_index].empty()) {
-      local_maxima[i] = *std::max_element(input[global_row_index].begin(), 
-                                         input[global_row_index].end());
+      local_maxima[i] = *std::max_element(input[global_row_index].begin(), input[global_row_index].end());
     } else {
       local_maxima[i] = 0;
     }
@@ -68,13 +67,13 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
 
   std::vector<int> recv_counts(size);
   std::vector<int> displacements(size);
-  
+
   MPI_Gather(&local_rows, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
     displacements[0] = 0;
     for (int i = 1; i < size; i++) {
-      displacements[i] = displacements[i-1] + recv_counts[i-1];
+      displacements[i] = displacements[i - 1] + recv_counts[i - 1];
     }
   }
 
@@ -84,9 +83,8 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
     GetOutput().resize(rows);
   }
 
-  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT,
-              GetOutput().data(), recv_counts.data(), displacements.data(), MPI_INT,
-              0, MPI_COMM_WORLD);
+  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, GetOutput().data(), recv_counts.data(), displacements.data(),
+              MPI_INT, 0, MPI_COMM_WORLD);
 
   MPI_Bcast(GetOutput().data(), rows, MPI_INT, 0, MPI_COMM_WORLD);
 

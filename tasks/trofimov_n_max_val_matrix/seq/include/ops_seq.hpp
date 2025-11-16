@@ -1,7 +1,7 @@
 #pragma once
 
-#include "trofimov_n_max_val_matrix/common/include/common.hpp"
 #include "task/include/task.hpp"
+#include "trofimov_n_max_val_matrix/common/include/common.hpp"
 
 namespace trofimov_n_max_val_matrix {
 

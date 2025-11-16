@@ -18,14 +18,14 @@ bool TrofimovNMaxValMatrixSEQ::ValidationImpl() {
   if (GetInput().empty()) {
     return false;
   }
-  
+
   size_t cols = GetInput()[0].size();
-  for (const auto& row : GetInput()) {
+  for (const auto &row : GetInput()) {
     if (row.size() != cols) {
       return false;
     }
   }
-  
+
   return GetOutput().empty();
 }
 
@@ -44,7 +44,7 @@ bool TrofimovNMaxValMatrixSEQ::RunImpl() {
       GetOutput()[i] = *std::max_element(GetInput()[i].begin(), GetInput()[i].end());
     }
   }
-  
+
   return !GetOutput().empty();
 }
 
