@@ -49,21 +49,22 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
 
   const std::size_t rows = input.size();
 
-  int rows_per_process = rows / size;
-  int remainder = rows % size;
+  const int rows_per_process = static_cast<int>(rows) / size;
+  const int remainder = static_cast<int>(rows) % size;
 
   const int start_row = (rank * rows_per_process) + std::min(rank, remainder);
-  int end_row = start_row + rows_per_process + (rank < remainder ? 1 : 0);
-  int local_rows = end_row - start_row;
+  const int end_row = start_row + rows_per_process + (rank < remainder ? 1 : 0);
+  const int local_rows = end_row - start_row;
 
   std::vector<int> local_maxima(local_rows);
   for (int i = 0; i < local_rows; i++) {
-    int global_row_index = start_row + i;
-    if (!input[global_row_index].empty()) {
-      local_maxima[i] = *std::max_element(input[global_row_index].begin(), input[global_row_index].end());
-    } else {
-      local_maxima[i] = 0;
-    }
+    const int global_row_index = start_row + i;
+    local_maxima[i] = *std::max_element(input[global_row_index].begin(), input[global_row_index].end());
+  }
+
+  std::vector<int> all_maxima;
+  if (rank == 0) {
+    all_maxima.resize(rows);
   }
 
   std::vector<int> recv_counts(size);
@@ -78,22 +79,43 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
     }
   }
 
-  if (rank == 0) {
-    GetOutput().resize(rows);
-  } else {
-    GetOutput().resize(rows);
-  }
-
-  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, GetOutput().data(), recv_counts.data(), displacements.data(),
+  MPI_Gatherv(local_maxima.data(), local_rows, MPI_INT, all_maxima.data(), recv_counts.data(), displacements.data(),
               MPI_INT, 0, MPI_COMM_WORLD);
 
-  MPI_Bcast(GetOutput().data(), rows, MPI_INT, 0, MPI_COMM_WORLD);
+  if (rank == 0) {
+    GetOutput() = all_maxima;
+  } else {
+    GetOutput().clear();
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  const int rows_int = static_cast<int>(rows);
+  if (rank == 0) {
+    MPI_Bcast(GetOutput().data(), rows_int, MPI_INT, 0, MPI_COMM_WORLD);
+  } else {
+    GetOutput().resize(rows);
+    MPI_Bcast(GetOutput().data(), rows_int, MPI_INT, 0, MPI_COMM_WORLD);
+  }
 
   return rank == 0 ? !GetOutput().empty() : true;
 }
 
 bool TrofimovNMaxValMatrixMPI::PostProcessingImpl() {
-  return !GetOutput().empty();
+  int rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  bool success = true;
+
+  if (rank == 0) {
+    success = !GetOutput().empty();
+  }
+
+  int success_int = success ? 1 : 0;
+  MPI_Bcast(&success_int, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  success = (success_int != 0);
+
+  return success;
 }
 
 }  // namespace trofimov_n_max_val_matrix

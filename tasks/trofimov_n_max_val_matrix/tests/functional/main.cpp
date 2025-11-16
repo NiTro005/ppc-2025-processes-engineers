@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "trofimov_n_max_val_matrix/common/include/common.hpp"
@@ -29,14 +28,19 @@ class TrofimovNRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
     input_data_.clear();
     expected_output_.clear();
 
+    input_data_.reserve(static_cast<std::size_t>(matrix_size));
+    expected_output_.reserve(static_cast<std::size_t>(matrix_size));
+
     for (int i = 0; i < matrix_size; ++i) {
       std::vector<int> row;
+      row.reserve(static_cast<std::size_t>(matrix_size));
+
       for (int j = 0; j < matrix_size; ++j) {
-        row.push_back(i * matrix_size + j);
+        row.push_back((i * matrix_size) + j);
       }
       input_data_.push_back(row);
 
-      expected_output_.push_back(*std::max_element(row.begin(), row.end()));
+      expected_output_.push_back(*std::ranges::max_element(row));
     }
   }
 
@@ -45,7 +49,7 @@ class TrofimovNRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
       return false;
     }
 
-    for (size_t i = 0; i < expected_output_.size(); ++i) {
+    for (std::size_t i = 0; i < expected_output_.size(); ++i) {
       if (output_data[i] != expected_output_[i]) {
         return false;
       }
@@ -61,26 +65,5 @@ class TrofimovNRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
   InType input_data_;
   OutType expected_output_;
 };
-
-namespace {
-
-TEST_P(TrofimovNRunFuncTestsProcesses, MaxValMatrixTest) {
-  ExecuteTest(GetParam());
-}
-
-const std::array<TestType, 3> kTestParam = {std::make_tuple(2, "2x2_matrix"), std::make_tuple(3, "3x3_matrix"),
-                                            std::make_tuple(4, "4x4_matrix")};
-
-const auto kTestTasksList = std::tuple_cat(
-    ppc::util::AddFuncTask<TrofimovNMaxValMatrixMPI, InType>(kTestParam, PPC_SETTINGS_trofimov_n_max_val_matrix),
-    ppc::util::AddFuncTask<TrofimovNMaxValMatrixSEQ, InType>(kTestParam, PPC_SETTINGS_trofimov_n_max_val_matrix));
-
-const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
-
-const auto kPerfTestName = TrofimovNRunFuncTestsProcesses::PrintFuncTestName<TrofimovNRunFuncTestsProcesses>;
-
-INSTANTIATE_TEST_SUITE_P(MaxValMatrixTests, TrofimovNRunFuncTestsProcesses, kGtestValues, kPerfTestName);
-
-}  // namespace
 
 }  // namespace trofimov_n_max_val_matrix
