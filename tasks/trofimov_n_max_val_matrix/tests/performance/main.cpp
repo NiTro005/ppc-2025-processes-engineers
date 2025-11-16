@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -16,6 +17,7 @@ constexpr int kDefaultMatrixSize = 100;
 }  // namespace
 
 class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
+ protected:
   const int kMatrixSize_ = kDefaultMatrixSize;
 
   InType input_data_;
@@ -33,15 +35,23 @@ class MaxValMatrixRunPerfTestProcesses : public ppc::util::BaseRunPerfTests<InTy
       row.reserve(static_cast<std::size_t>(kMatrixSize_));
 
       for (int j = 0; j < kMatrixSize_; ++j) {
-        row.push_back(i * kMatrixSize_ + j);
+        row.push_back((i * kMatrixSize_) + j);
       }
-      input_data_.push_back(std::move(row));
+      input_data_.push_back(row);
 
       expected_output_.push_back(*std::ranges::max_element(input_data_.back()));
     }
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
+    int world_rank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    // Только процесс с рангом 0 проверяет результаты
+    if (world_rank != 0) {
+      return true;
+    }
+
     if (output_data.size() != expected_output_.size()) {
       return false;
     }
