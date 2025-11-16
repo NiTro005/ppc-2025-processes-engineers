@@ -52,7 +52,7 @@ class TrofimovNRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
     int mpi_initialized = 0;
     MPI_Initialized(&mpi_initialized);
 
-    if (mpi_initialized) {
+    if (mpi_initialized != 0) {
       int world_rank = 0;
       MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
