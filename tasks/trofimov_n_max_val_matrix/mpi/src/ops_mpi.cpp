@@ -2,6 +2,7 @@
 
 #include <mpi.h>
 
+#include <tuple>
 #include <algorithm>
 #include <cstddef>
 #include <vector>
@@ -54,7 +55,7 @@ std::tuple<int, int> CalculateLocalRows(int rank, int size, int total_rows) {
   const int rows_per_process = total_rows / size;
   const int remainder = total_rows % size;
 
-  const int start_row = rank * rows_per_process + std::min(rank, remainder);
+  const int start_row = (rank * rows_per_process) + std::min(rank, remainder);
   const int local_rows = rows_per_process + (rank < remainder ? 1 : 0);
 
   return {start_row, local_rows};

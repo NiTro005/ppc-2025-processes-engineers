@@ -13,7 +13,7 @@
 namespace trofimov_n_max_val_matrix {
 
 namespace {
-constexpr int kDefaultMatrixSize = 10000;
+constexpr int kDefaultMatrixSize = 100000;
 constexpr int kRootRank = 0;
 }  // namespace
 
