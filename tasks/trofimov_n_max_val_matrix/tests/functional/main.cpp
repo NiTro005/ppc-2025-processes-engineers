@@ -83,24 +83,31 @@ class TrofimovNRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
   OutType expected_output_;
 };
 
-namespace {
-
 TEST_P(TrofimovNRunFuncTestsProcesses, FindMaxInEachRow) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 6> kTestParam = {
+namespace {
+
+const std::array<TestType, 12> kTestParam = {
     std::make_tuple(std::vector<std::vector<int>>{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}, std::vector<int>{3, 6, 9}),
-
     std::make_tuple(std::vector<std::vector<int>>{{-1, -5, -3}, {-9, -2, -7}}, std::vector<int>{-1, -2}),
-
     std::make_tuple(std::vector<std::vector<int>>{{5, 9, 1, 10, 4}}, std::vector<int>{10}),
-
     std::make_tuple(std::vector<std::vector<int>>{{9, 9, 9}, {9, 9, 9}}, std::vector<int>{9, 9}),
-
     std::make_tuple(std::vector<std::vector<int>>{{1, 5, 1}, {3, 3, 4}}, std::vector<int>{5, 4}),
+    std::make_tuple(std::vector<std::vector<int>>{{50}}, std::vector<int>{50}),
 
-    std::make_tuple(std::vector<std::vector<int>>{{50}}, std::vector<int>{50})};
+    std::make_tuple(std::vector<std::vector<int>>{{-1, 2, -3}, {4, -5, 6}}, std::vector<int>{2, 6}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{0, 0, 0}, {0, 1, 0}}, std::vector<int>{0, 1}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{1000, 999}, {500, 1001}}, std::vector<int>{1000, 1001}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{5, 5, 5}, {3, 7, 7}}, std::vector<int>{5, 7}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{1}}, std::vector<int>{1}),
+
+    std::make_tuple(std::vector<std::vector<int>>{{1, 2, 3}}, std::vector<int>{3})};
 
 const auto kTestTasksList = std::tuple_cat(
     ppc::util::AddFuncTask<TrofimovNMaxValMatrixMPI, InType>(kTestParam, PPC_SETTINGS_trofimov_n_max_val_matrix),
