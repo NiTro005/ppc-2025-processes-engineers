@@ -113,14 +113,24 @@ void GatherResults(int rank, int size, int local_rows, const std::vector<int> &l
 }  // namespace
 
 bool TrofimovNMaxValMatrixMPI::RunImpl() {
-  const auto &input = GetInput();
-
   int rank = 0;
   int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  const auto total_rows = static_cast<int>(input.size());
+  int total_rows = 0;
+  int total_cols = 0;
+
+  if (rank == kRootRank) {
+    const auto &input = GetInput();
+    total_rows = static_cast<int>(input.size());
+    if (total_rows > 0) {
+      total_cols = static_cast<int>(input[0].size());
+    }
+  }
+
+  MPI_Bcast(&total_rows, 1, MPI_INT, kRootRank, MPI_COMM_WORLD);
+  MPI_Bcast(&total_cols, 1, MPI_INT, kRootRank, MPI_COMM_WORLD);
 
   if (total_rows == 0) {
     HandleEmptyCase(rank, total_rows);
@@ -130,6 +140,20 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
     return true;
   }
 
+  InType local_input(total_rows, std::vector<int>(total_cols));
+
+  if (rank == kRootRank) {
+    const auto &original_input = GetInput();
+    for (int i = 0; i < total_rows; ++i) {
+      std::copy(original_input[i].begin(), original_input[i].end(), local_input[i].begin());
+      MPI_Bcast(local_input[i].data(), total_cols, MPI_INT, kRootRank, MPI_COMM_WORLD);
+    }
+  } else {
+    for (int i = 0; i < total_rows; ++i) {
+      MPI_Bcast(local_input[i].data(), total_cols, MPI_INT, kRootRank, MPI_COMM_WORLD);
+    }
+  }
+
   auto [start_row, local_rows] = CalculateLocalRows(rank, size, total_rows);
 
   if (local_rows <= 0 || start_row >= total_rows) {
@@ -137,7 +161,7 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
     return true;
   }
 
-  auto local_maxima = CalculateLocalMaxima(input, start_row, local_rows, total_rows);
+  auto local_maxima = CalculateLocalMaxima(local_input, start_row, local_rows, total_rows);
 
   GatherResults(rank, size, local_rows, local_maxima, GetOutput(), total_rows);
 
