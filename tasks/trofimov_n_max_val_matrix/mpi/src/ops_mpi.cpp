@@ -162,7 +162,6 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
   }
 
   auto local_maxima = CalculateLocalMaxima(local_input, start_row, local_rows, total_rows);
-
   GatherResults(rank, size, local_rows, local_maxima, GetOutput(), total_rows);
 
   return true;
