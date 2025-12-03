@@ -108,53 +108,6 @@ void GatherResults(int rank, int size, int local_rows, const std::vector<int> &l
               displacements.data(), MPI_INT, kRootRank, MPI_COMM_WORLD);
 }
 
-void SendDataToProcesses(int size, int total_rows, int total_cols,
-                         const std::vector<std::vector<int>> &original_input) {
-  for (int dest = 1; dest < size; ++dest) {
-    auto [dest_start_row, dest_local_rows] = CalculateLocalRows(dest, size, total_rows);
-
-    if (dest_local_rows <= 0) {
-      continue;
-    }
-
-    std::array<int, 2> dest_info = {dest_local_rows, total_cols};
-    MPI_Send(dest_info.data(), 2, MPI_INT, dest, 0, MPI_COMM_WORLD);
-
-    for (int i = 0; i < dest_local_rows; ++i) {
-      int global_row = dest_start_row + i;
-      MPI_Send(original_input[global_row].data(), total_cols, MPI_INT, dest, i + 1, MPI_COMM_WORLD);
-    }
-  }
-}
-
-void CopyLocalData(int local_rows, int start_row, const std::vector<std::vector<int>> &original_input,
-                   std::vector<std::vector<int>> &local_input) {
-  for (int i = 0; i < local_rows; ++i) {
-    int global_row = start_row + i;
-    std::copy(original_input[global_row].begin(), original_input[global_row].end(), local_input[i].begin());
-  }
-}
-
-void ReceiveDataFromRoot(int local_rows, int total_cols, std::vector<std::vector<int>> &local_input) {
-  if (local_rows <= 0) {
-    return;
-  }
-
-  std::array<int, 2> recv_info;
-  MPI_Recv(recv_info.data(), 2, MPI_INT, kRootRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-  int recv_rows = recv_info[0];
-  int recv_cols = recv_info[1];
-
-  if (recv_rows != local_rows || recv_cols != total_cols) {
-    local_input.resize(recv_rows, std::vector<int>(recv_cols));
-  }
-
-  for (int i = 0; i < recv_rows; ++i) {
-    MPI_Recv(local_input[i].data(), recv_cols, MPI_INT, kRootRank, i + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-  }
-}
-
 }  // namespace
 
 bool TrofimovNMaxValMatrixMPI::RunImpl() {
