@@ -3,6 +3,7 @@
 #include <mpi.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <tuple>
 #include <vector>
@@ -108,6 +109,56 @@ void GatherResults(int rank, int size, int local_rows, const std::vector<int> &l
               displacements.data(), MPI_INT, kRootRank, MPI_COMM_WORLD);
 }
 
+bool SendRowsToProcess(int dest, int total_rows, int total_cols, int size,
+                       const std::vector<std::vector<int>> &original_input) {
+  auto [dest_start_row, dest_local_rows] = CalculateLocalRows(dest, size, total_rows);
+
+  if (dest_local_rows <= 0) {
+    return false;
+  }
+
+  std::array<int, 2> dest_info = {dest_local_rows, total_cols};
+  MPI_Send(dest_info.data(), 2, MPI_INT, dest, 0, MPI_COMM_WORLD);
+
+  for (int i = 0; i < dest_local_rows; ++i) {
+    int global_row = dest_start_row + i;
+    MPI_Send(original_input[static_cast<std::size_t>(global_row)].data(), total_cols, MPI_INT, dest, i + 1,
+             MPI_COMM_WORLD);
+  }
+
+  return true;
+}
+
+void ProcessRootData(int local_rows, int start_row, const std::vector<std::vector<int>> &original_input,
+                     std::vector<std::vector<int>> &local_input) {
+  local_input.reserve(static_cast<std::size_t>(local_rows));
+  for (int i = 0; i < local_rows; ++i) {
+    int global_row = start_row + i;
+    local_input.push_back(original_input[static_cast<std::size_t>(global_row)]);
+  }
+}
+
+bool ReceiveRowsFromRoot(std::vector<std::vector<int>> &local_input) {
+  std::array<int, 2> recv_info = {0, 0};
+  MPI_Recv(recv_info.data(), 2, MPI_INT, kRootRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+  int recv_rows = recv_info[0];
+  int recv_cols = recv_info[1];
+
+  if (recv_rows <= 0 || recv_cols <= 0) {
+    return false;
+  }
+
+  local_input.reserve(static_cast<std::size_t>(recv_rows));
+  for (int i = 0; i < recv_rows; ++i) {
+    std::vector<int> row(static_cast<std::size_t>(recv_cols));
+    MPI_Recv(row.data(), recv_cols, MPI_INT, kRootRank, i + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    local_input.push_back(std::move(row));
+  }
+
+  return true;
+}
+
 }  // namespace
 
 bool TrofimovNMaxValMatrixMPI::RunImpl() {
@@ -130,7 +181,8 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
   MPI_Bcast(&total_rows, 1, MPI_INT, kRootRank, MPI_COMM_WORLD);
   MPI_Bcast(&total_cols, 1, MPI_INT, kRootRank, MPI_COMM_WORLD);
 
-  if (total_rows <= 0 || total_cols <= 0) {
+  const bool invalid_matrix = total_rows <= 0 || total_cols <= 0;
+  if (invalid_matrix) {
     HandleEmptyCase(rank, total_rows);
     if (rank == kRootRank) {
       GetOutput().clear();
@@ -146,51 +198,20 @@ bool TrofimovNMaxValMatrixMPI::RunImpl() {
   }
 
   std::vector<std::vector<int>> local_input;
-  if (local_rows > 0 && total_cols > 0) {
-    local_input.resize(static_cast<std::size_t>(local_rows), std::vector<int>(static_cast<std::size_t>(total_cols)));
-  }
 
   if (rank == kRootRank) {
     const auto &original_input = GetInput();
 
     for (int dest = 1; dest < size; ++dest) {
-      auto [dest_start_row, dest_local_rows] = CalculateLocalRows(dest, size, total_rows);
-
-      if (dest_local_rows <= 0) {
-        continue;
-      }
-
-      std::array<int, 2> dest_info = {dest_local_rows, total_cols};
-      MPI_Send(dest_info.data(), 2, MPI_INT, dest, 0, MPI_COMM_WORLD);
-
-      for (int i = 0; i < dest_local_rows; ++i) {
-        int global_row = dest_start_row + i;
-        MPI_Send(original_input[static_cast<std::size_t>(global_row)].data(), total_cols, MPI_INT, dest, i + 1,
-                 MPI_COMM_WORLD);
-      }
+      SendRowsToProcess(dest, total_rows, total_cols, size, original_input);
     }
 
-    for (int i = 0; i < local_rows; ++i) {
-      int global_row = start_row + i;
-      std::copy(original_input[static_cast<std::size_t>(global_row)].begin(),
-                original_input[static_cast<std::size_t>(global_row)].end(),
-                local_input[static_cast<std::size_t>(i)].begin());
-    }
-
+    ProcessRootData(local_rows, start_row, original_input, local_input);
   } else {
-    std::array<int, 2> recv_info;
-    MPI_Recv(recv_info.data(), 2, MPI_INT, kRootRank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-    int recv_rows = recv_info[0];
-    int recv_cols = recv_info[1];
-
-    if (recv_rows > 0 && recv_cols > 0) {
-      local_input.resize(static_cast<std::size_t>(recv_rows), std::vector<int>(static_cast<std::size_t>(recv_cols)));
-
-      for (int i = 0; i < recv_rows; ++i) {
-        MPI_Recv(local_input[static_cast<std::size_t>(i)].data(), recv_cols, MPI_INT, kRootRank, i + 1, MPI_COMM_WORLD,
-                 MPI_STATUS_IGNORE);
-      }
+    const bool received = ReceiveRowsFromRoot(local_input);
+    if (!received) {
+      HandleEmptyCase(rank, total_rows);
+      return true;
     }
   }
 
