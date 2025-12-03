@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <utility>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #include "trofimov_n_max_val_matrix/common/include/common.hpp"
