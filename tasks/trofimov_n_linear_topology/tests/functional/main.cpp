@@ -14,6 +14,8 @@
 
 namespace trofimov_n_linear_topology {
 
+namespace {
+
 std::string InputDataToString(const InType &in) {
   return "src" + std::to_string(in.source) + "_tgt" + std::to_string(in.target) + "_val" + std::to_string(in.value);
 }
@@ -27,6 +29,8 @@ std::string MakeGTestNameSafe(const std::string &s) {
   }
   return result;
 }
+
+}  // namespace
 
 class TrofimovNLinearTopologyFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
