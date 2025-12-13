@@ -8,15 +8,19 @@
 namespace trofimov_n_linear_topology {
 
 class TrofimovNLinearTopologyPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kCount_ = 100;
+  const int kValue_ = 10000;
   InType input_data_{};
 
   void SetUp() override {
-    input_data_ = kCount_;
+    int world_size = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    input_data_.source = 0;
+    input_data_.target = world_size - 1;
+    input_data_.value = kValue_;
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return input_data_ == output_data;
+    return input_data_.value == output_data;
   }
 
   InType GetTestInputData() final {
@@ -28,8 +32,8 @@ TEST_P(TrofimovNLinearTopologyPerfTest, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
-const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, TrofimovNLinearTopologyMPI, TrofimovNLinearTopologySEQ>(PPC_SETTINGS_trofimov_n_linear_topology);
+const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, TrofimovNLinearTopologyMPI, TrofimovNLinearTopologySEQ>(
+    PPC_SETTINGS_trofimov_n_linear_topology);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 

@@ -7,9 +7,17 @@
 
 namespace trofimov_n_linear_topology {
 
-using InType = int;
+struct InputData {
+  int source;
+  int target;
+  int value;
+};
+
+using InType = InputData;
 using OutType = int;
-using TestType = std::tuple<int, std::string>;
+
+using TestType = std::tuple<InputData, std::string>;
+
 using BaseTask = ppc::task::Task<InType, OutType>;
 
 }  // namespace trofimov_n_linear_topology

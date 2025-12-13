@@ -15,46 +15,23 @@ TrofimovNLinearTopologySEQ::TrofimovNLinearTopologySEQ(const InType &in) {
 }
 
 bool TrofimovNLinearTopologySEQ::ValidationImpl() {
-  return (GetInput() > 0) && (GetOutput() == 0);
+  return GetInput().source >= 0 && GetInput().target >= 0;
 }
 
 bool TrofimovNLinearTopologySEQ::PreProcessingImpl() {
-  GetOutput() = 2 * GetInput();
-  return GetOutput() > 0;
+  return true;
 }
 
 bool TrofimovNLinearTopologySEQ::RunImpl() {
-  if (GetInput() == 0) {
-    return false;
-  }
+  const auto in = GetInput();
 
-  for (InType i = 0; i < GetInput(); i++) {
-    for (InType j = 0; j < GetInput(); j++) {
-      for (InType k = 0; k < GetInput(); k++) {
-        std::vector<InType> tmp(i + j + k, 1);
-        GetOutput() += std::accumulate(tmp.begin(), tmp.end(), 0);
-        GetOutput() -= i + j + k;
-      }
-    }
-  }
+  GetOutput() = in.value;
 
-  const int num_threads = ppc::util::GetNumThreads();
-  GetOutput() *= num_threads;
-
-  int counter = 0;
-  for (int i = 0; i < num_threads; i++) {
-    counter++;
-  }
-
-  if (counter != 0) {
-    GetOutput() /= counter;
-  }
-  return GetOutput() > 0;
+  return true;
 }
 
 bool TrofimovNLinearTopologySEQ::PostProcessingImpl() {
-  GetOutput() -= GetInput();
-  return GetOutput() > 0;
+  return true;
 }
 
 }  // namespace trofimov_n_linear_topology

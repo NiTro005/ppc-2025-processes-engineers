@@ -1,7 +1,7 @@
 #pragma once
 
-#include "trofimov_n_linear_topology/common/include/common.hpp"
 #include "task/include/task.hpp"
+#include "trofimov_n_linear_topology/common/include/common.hpp"
 
 namespace trofimov_n_linear_topology {
 
