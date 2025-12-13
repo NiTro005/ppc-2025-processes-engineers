@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <mpi.h>
 
 #include "trofimov_n_linear_topology/common/include/common.hpp"
 #include "trofimov_n_linear_topology/mpi/include/ops_mpi.hpp"

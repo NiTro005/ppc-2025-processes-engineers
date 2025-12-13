@@ -4,13 +4,11 @@
 #include <cctype>
 #include <string>
 #include <tuple>
-#include <vector>
 
 #include "trofimov_n_linear_topology/common/include/common.hpp"
 #include "trofimov_n_linear_topology/mpi/include/ops_mpi.hpp"
 #include "trofimov_n_linear_topology/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
-#include "util/include/util.hpp"
 
 namespace trofimov_n_linear_topology {
 
@@ -23,7 +21,7 @@ std::string InputDataToString(const InType &in) {
 std::string MakeGTestNameSafe(const std::string &s) {
   std::string result = s;
   for (auto &c : result) {
-    if (!std::isalnum(c)) {
+    if (std::isalnum(c) == 0) {
       c = '_';
     }
   }
@@ -41,7 +39,7 @@ class TrofimovNLinearTopologyFuncTests : public ppc::util::BaseRunFuncTests<InTy
 
  protected:
   void SetUp() override {
-    input_data_ = {0, 1, 42};
+    input_data_ = {.source = 0, .target = 1, .value = 42};
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
@@ -53,7 +51,7 @@ class TrofimovNLinearTopologyFuncTests : public ppc::util::BaseRunFuncTests<InTy
   }
 
  private:
-  InType input_data_;
+  InType input_data_{};
 };
 
 namespace {
