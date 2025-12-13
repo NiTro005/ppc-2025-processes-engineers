@@ -8,8 +8,7 @@
 
 namespace trofimov_n_linear_topology {
 
-// Вспомогательные функции (не методы класса)
-namespace helper {
+namespace {
 
 int GetStepDirection(const InType &in) {
   return (in.target > in.source) ? 1 : -1;
@@ -69,7 +68,7 @@ int HandleSpecialCases(const InType &in, int rank, MPI_Comm linear_comm) {
   return -1;
 }
 
-}  // namespace helper
+}  // namespace
 
 TrofimovNLinearTopologyMPI::TrofimovNLinearTopologyMPI(const InType &in) : linear_comm_(MPI_COMM_NULL) {
   SetTypeOfTask(GetStaticTypeOfTask());
@@ -100,19 +99,18 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
     return true;
   }
 
-  // Явно указываем, что используем функции из пространства имен helper
-  if (!helper::IsValidSourceTarget(in, size_)) {
+  if (!IsValidSourceTarget(in, size_)) {
     return false;
   }
 
-  int result = helper::HandleSpecialCases(in, rank_, linear_comm_);
+  int result = HandleSpecialCases(in, rank_, linear_comm_);
 
   if (result != -1) {
     GetOutput() = result;
     return true;
   }
 
-  result = helper::PassValueThroughLinearTopology(in, rank_, linear_comm_);
+  result = PassValueThroughLinearTopology(in, rank_, linear_comm_);
   MPI_Bcast(&result, 1, MPI_INT, in.target, linear_comm_);
   GetOutput() = result;
 
