@@ -5,19 +5,15 @@
 #include <cmath>
 
 #include "trofimov_n_linear_topology/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace trofimov_n_linear_topology {
 
-TrofimovNLinearTopologyMPI::TrofimovNLinearTopologyMPI(const InType &in) {
+TrofimovNLinearTopologyMPI::TrofimovNLinearTopologyMPI(const InType &in)
+    : linear_comm_(MPI_COMM_NULL), rank_(0), size_(0) {
   SetTypeOfTask(GetStaticTypeOfTask());
 
   GetInput() = in;
   GetOutput() = 0;
-
-  linear_comm_ = MPI_COMM_NULL;
-  rank_ = 0;
-  size_ = 0;
 }
 
 bool TrofimovNLinearTopologyMPI::ValidationImpl() {
@@ -43,8 +39,7 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
   }
 
   if (in.source < 0 || in.target < 0 || in.source >= size_ || in.target >= size_) {
-    MPI_Barrier(linear_comm_);
-    return true;
+    return false;
   }
 
   int result = 0;
@@ -56,8 +51,6 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
 
     MPI_Bcast(&result, 1, MPI_INT, in.target, linear_comm_);
     GetOutput() = result;
-
-    MPI_Barrier(linear_comm_);
     return true;
   }
 
@@ -69,7 +62,11 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
     MPI_Send(&current_value, 1, MPI_INT, rank_ + step, 0, linear_comm_);
   }
 
-  for (int i = in.source + step; (step == 1 ? i <= in.target : i >= in.target); i += step) {
+  const bool forward_direction = (step == 1);
+  const int start = in.source + step;
+  const int end = in.target;
+
+  for (int i = start; (forward_direction && i <= end) || (!forward_direction && i >= end); i += step) {
     if (rank_ == i) {
       MPI_Recv(&current_value, 1, MPI_INT, rank_ - step, 0, linear_comm_, MPI_STATUS_IGNORE);
 
@@ -84,7 +81,6 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
   MPI_Bcast(&result, 1, MPI_INT, in.target, linear_comm_);
   GetOutput() = result;
 
-  MPI_Barrier(linear_comm_);
   return true;
 }
 
