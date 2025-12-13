@@ -8,6 +8,69 @@
 
 namespace trofimov_n_linear_topology {
 
+// Вспомогательные функции (не методы класса)
+namespace helper {
+
+int GetStepDirection(const InType &in) {
+  return (in.target > in.source) ? 1 : -1;
+}
+
+bool ShouldContinueLoop(int i, int end, bool forward_direction) {
+  return forward_direction ? (i <= end) : (i >= end);
+}
+
+bool IsValidSourceTarget(const InType &in, int size) {
+  return in.source >= 0 && in.target >= 0 && in.source < size && in.target < size;
+}
+
+int ProcessIntermediateNodes(const InType &in, int step, int rank, MPI_Comm linear_comm) {
+  const bool forward_direction = (step == 1);
+  const int start = in.source + step;
+  const int end = in.target;
+  int current_value = 0;
+  int result = 0;
+
+  for (int i = start; ShouldContinueLoop(i, end, forward_direction); i += step) {
+    if (rank == i) {
+      MPI_Recv(&current_value, 1, MPI_INT, rank - step, 0, linear_comm, MPI_STATUS_IGNORE);
+
+      if (rank != in.target) {
+        MPI_Send(&current_value, 1, MPI_INT, rank + step, 0, linear_comm);
+      } else {
+        result = current_value;
+      }
+    }
+  }
+
+  return result;
+}
+
+int PassValueThroughLinearTopology(const InType &in, int rank, MPI_Comm linear_comm) {
+  const int step = GetStepDirection(in);
+  int current_value = 0;
+
+  if (rank == in.source) {
+    current_value = in.value;
+    MPI_Send(&current_value, 1, MPI_INT, rank + step, 0, linear_comm);
+  }
+
+  return ProcessIntermediateNodes(in, step, rank, linear_comm);
+}
+
+int HandleSpecialCases(const InType &in, int rank, MPI_Comm linear_comm) {
+  if (in.source == in.target) {
+    int result = 0;
+    if (rank == in.target) {
+      result = in.value;
+    }
+    MPI_Bcast(&result, 1, MPI_INT, in.target, linear_comm);
+    return result;
+  }
+  return -1;
+}
+
+}  // namespace helper
+
 TrofimovNLinearTopologyMPI::TrofimovNLinearTopologyMPI(const InType &in) : linear_comm_(MPI_COMM_NULL) {
   SetTypeOfTask(GetStaticTypeOfTask());
 
@@ -37,82 +100,23 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
     return true;
   }
 
-  if (!IsValidSourceTarget(in)) {
+  // Явно указываем, что используем функции из пространства имен helper
+  if (!helper::IsValidSourceTarget(in, size_)) {
     return false;
   }
 
-  int result = HandleSpecialCases(in);
+  int result = helper::HandleSpecialCases(in, rank_, linear_comm_);
 
   if (result != -1) {
     GetOutput() = result;
     return true;
   }
 
-  result = PassValueThroughLinearTopology(in);
+  result = helper::PassValueThroughLinearTopology(in, rank_, linear_comm_);
   MPI_Bcast(&result, 1, MPI_INT, in.target, linear_comm_);
   GetOutput() = result;
 
   return true;
-}
-
-bool TrofimovNLinearTopologyMPI::IsValidSourceTarget(const InType &in) const {
-  return !(in.source < 0 || in.target < 0 || in.source >= size_ || in.target >= size_);
-}
-
-int TrofimovNLinearTopologyMPI::HandleSpecialCases(const InType &in) {
-  if (in.source == in.target) {
-    int result = 0;
-    if (rank_ == in.target) {
-      result = in.value;
-    }
-    MPI_Bcast(&result, 1, MPI_INT, in.target, linear_comm_);
-    return result;
-  }
-  return -1;  // -1 означает, что это не особый случай
-}
-
-int TrofimovNLinearTopologyMPI::PassValueThroughLinearTopology(const InType &in) {
-  const int step = GetStepDirection(in);
-  int current_value = 0;
-
-  if (rank_ == in.source) {
-    current_value = in.value;
-    MPI_Send(&current_value, 1, MPI_INT, rank_ + step, 0, linear_comm_);
-  }
-
-  return ProcessIntermediateNodes(in, step, current_value);
-}
-
-int TrofimovNLinearTopologyMPI::GetStepDirection(const InType &in) const {
-  return (in.target > in.source) ? 1 : -1;
-}
-
-int TrofimovNLinearTopologyMPI::ProcessIntermediateNodes(const InType &in, int step, int current_value) {
-  const bool forward_direction = (step == 1);
-  const int start = in.source + step;
-  const int end = in.target;
-  int result = 0;
-
-  for (int i = start; ShouldContinueLoop(i, end, forward_direction); i += step) {
-    if (rank_ == i) {
-      MPI_Recv(&current_value, 1, MPI_INT, rank_ - step, 0, linear_comm_, MPI_STATUS_IGNORE);
-
-      if (rank_ != in.target) {
-        MPI_Send(&current_value, 1, MPI_INT, rank_ + step, 0, linear_comm_);
-      } else {
-        result = current_value;
-      }
-    }
-  }
-
-  return result;
-}
-
-bool TrofimovNLinearTopologyMPI::ShouldContinueLoop(int i, int end, bool forward_direction) const {
-  if (forward_direction) {
-    return i <= end;
-  }
-  return i >= end;
 }
 
 bool TrofimovNLinearTopologyMPI::PostProcessingImpl() {

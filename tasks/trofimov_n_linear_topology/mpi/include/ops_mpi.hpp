@@ -23,13 +23,6 @@ class TrofimovNLinearTopologyMPI : public BaseTask {
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-
-  bool IsValidSourceTarget(const InType &in) const;
-  int HandleSpecialCases(const InType &in);
-  int PassValueThroughLinearTopology(const InType &in);
-  int GetStepDirection(const InType &in) const;
-  int ProcessIntermediateNodes(const InType &in, int step, int current_value);
-  bool ShouldContinueLoop(int i, int end, bool forward_direction) const;
 };
 
 }  // namespace trofimov_n_linear_topology
