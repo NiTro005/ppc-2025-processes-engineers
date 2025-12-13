@@ -1,10 +1,6 @@
 #include "trofimov_n_linear_topology/seq/include/ops_seq.hpp"
 
-#include <numeric>
-#include <vector>
-
 #include "trofimov_n_linear_topology/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace trofimov_n_linear_topology {
 
