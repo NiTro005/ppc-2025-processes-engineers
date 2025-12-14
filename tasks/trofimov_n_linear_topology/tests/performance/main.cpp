@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 #include <mpi.h>
 
+#include <chrono>
+#include <thread>
+
 #include "trofimov_n_linear_topology/common/include/common.hpp"
 #include "trofimov_n_linear_topology/mpi/include/ops_mpi.hpp"
 #include "trofimov_n_linear_topology/seq/include/ops_seq.hpp"
@@ -30,6 +33,8 @@ class TrofimovNLinearTopologyPerfTest : public ppc::util::BaseRunPerfTests<InTyp
 };
 
 TEST_P(TrofimovNLinearTopologyPerfTest, RunPerfModes) {
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
   ExecuteTest(GetParam());
 }
 
