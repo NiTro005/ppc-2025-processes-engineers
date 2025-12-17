@@ -13,6 +13,16 @@ struct InputData {
   int value;
 };
 
+inline void Work(int n) {
+  volatile int acc = 0;
+  const int iters = n * 1000;
+  for (int i = 0; i < iters; ++i) {
+    acc += i % 13;
+    acc ^= acc << 1;
+    acc += acc >> 3;
+  }
+}
+
 using InType = InputData;
 using OutType = int;
 

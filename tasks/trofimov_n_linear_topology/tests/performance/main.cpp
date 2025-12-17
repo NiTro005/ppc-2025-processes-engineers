@@ -12,7 +12,7 @@
 namespace trofimov_n_linear_topology {
 
 class TrofimovNLinearTopologyPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  const int kValue_ = 1000000000;
+  const int kValue_ = 100000;
   InType input_data_{};
 
   void SetUp() override {

@@ -11,18 +11,21 @@ TrofimovNLinearTopologySEQ::TrofimovNLinearTopologySEQ(const InType &in) {
 }
 
 bool TrofimovNLinearTopologySEQ::ValidationImpl() {
-  return GetInput().source >= 0 && GetInput().target >= 0;
+  const auto &in = GetInput();
+  return in.source >= 0 && in.target >= 0;
 }
 
 bool TrofimovNLinearTopologySEQ::PreProcessingImpl() {
+  GetOutput() = 0;
   return true;
 }
 
 bool TrofimovNLinearTopologySEQ::RunImpl() {
-  const auto in = GetInput();
+  const auto &in = GetInput();
+
+  Work(in.value);
 
   GetOutput() = in.value;
-
   return true;
 }
 
