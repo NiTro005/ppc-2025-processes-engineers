@@ -1,7 +1,5 @@
 #pragma once
 
-#include <mpi.h>
-
 #include "task/include/task.hpp"
 #include "trofimov_n_linear_topology/common/include/common.hpp"
 

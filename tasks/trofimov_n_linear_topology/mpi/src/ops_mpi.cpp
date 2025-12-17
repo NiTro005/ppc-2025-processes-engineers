@@ -35,7 +35,7 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
     return true;
   }
 
-  Work(in.value / size_ + 1);
+  Work((in.value / size_) + 1);
 
   int result = 0;
 
@@ -55,10 +55,11 @@ bool TrofimovNLinearTopologyMPI::RunImpl() {
     MPI_Send(&result, 1, MPI_INT, rank_ + step, 0, MPI_COMM_WORLD);
   }
 
-  for (int r = in.source + step; r != in.target + step; r += step) {
-    if (rank_ == r) {
+  for (int curr_rank = in.source + step; curr_rank != in.target + step; curr_rank += step) {
+    if (rank_ == curr_rank) {
       MPI_Recv(&result, 1, MPI_INT, rank_ - step, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      if (r != in.target) {
+      Work(result);
+      if (curr_rank != in.target) {
         MPI_Send(&result, 1, MPI_INT, rank_ + step, 0, MPI_COMM_WORLD);
       }
     }
