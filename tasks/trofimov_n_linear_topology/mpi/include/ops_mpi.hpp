@@ -15,7 +15,6 @@ class TrofimovNLinearTopologyMPI : public BaseTask {
   explicit TrofimovNLinearTopologyMPI(const InType &in);
 
  private:
-  MPI_Comm linear_comm_ = MPI_COMM_NULL;
   int rank_ = 0;
   int size_ = 0;
 
