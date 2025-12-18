@@ -76,4 +76,3 @@ bool TrofimovNLinearTopologyMPI::PostProcessingImpl() {
 }
 
 }  // namespace trofimov_n_linear_topology
-
