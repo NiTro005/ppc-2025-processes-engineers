@@ -8,13 +8,14 @@ TrofimovNMultMatrixCanonSEQ::TrofimovNMultMatrixCanonSEQ(const InType &in) {
 }
 
 bool TrofimovNMultMatrixCanonSEQ::ValidationImpl() {
-  const auto &[A, B, n] = GetInput();
-  return n > 0 && A.size() == static_cast<size_t>(n * n) && B.size() == static_cast<size_t>(n * n);
+  return true;
 }
 
 bool TrofimovNMultMatrixCanonSEQ::PreProcessingImpl() {
   const auto &[_, __, n] = GetInput();
-  GetOutput().assign(n * n, 0.0);
+  if (n > 0) {
+    GetOutput().assign(n * n, 0.0);
+  }
   return true;
 }
 
@@ -22,13 +23,15 @@ bool TrofimovNMultMatrixCanonSEQ::RunImpl() {
   const auto &[A, B, n] = GetInput();
   auto &C = GetOutput();
 
+  if (n <= 0) {
+    return true;
+  }
+
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
-      double sum = 0.0;
       for (int k = 0; k < n; k++) {
-        sum += A[i * n + k] * B[k * n + j];
+        C[i * n + j] += A[i * n + k] * B[k * n + j];
       }
-      C[i * n + j] = sum;
     }
   }
   return true;

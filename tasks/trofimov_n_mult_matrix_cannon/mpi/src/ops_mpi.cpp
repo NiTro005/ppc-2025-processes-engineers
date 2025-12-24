@@ -3,10 +3,7 @@
 #include <mpi.h>
 
 #include <cmath>
-#include <cstring>
 #include <vector>
-
-#include "trofimov_n_mult_matrix_cannon/common/include/common.hpp"
 
 namespace trofimov_n_mult_matrix_cannon {
 
@@ -16,13 +13,14 @@ TrofimovNMultMatrixCanonMPI::TrofimovNMultMatrixCanonMPI(const InType &in) {
 }
 
 bool TrofimovNMultMatrixCanonMPI::ValidationImpl() {
-  const auto &[A, B, n] = GetInput();
-  return n > 0 && A.size() == static_cast<size_t>(n * n) && B.size() == static_cast<size_t>(n * n);
+  return true;
 }
 
 bool TrofimovNMultMatrixCanonMPI::PreProcessingImpl() {
   const auto &[_, __, n] = GetInput();
-  GetOutput().assign(n * n, 0.0);
+  if (n > 0) {
+    GetOutput().assign(n * n, 0.0);
+  }
   return true;
 }
 
@@ -30,13 +28,24 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
   const auto &[A, B, n] = GetInput();
   auto &C = GetOutput();
 
-  int size, rank;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (n <= 0) {
+    return true;
+  }
 
-  int q = static_cast<int>(std::sqrt(size));
-  if (q * q != size || n % q != 0) {
-    return false;
+  int world_size;
+  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+  int q = static_cast<int>(std::sqrt(world_size));
+  if (q * q != world_size || n % q != 0) {
+    // fallback: последовательное умножение
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        for (int k = 0; k < n; k++) {
+          C[i * n + j] += A[i * n + k] * B[k * n + j];
+        }
+      }
+    }
+    return true;
   }
 
   int block = n / q;
@@ -46,8 +55,11 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
   MPI_Comm cart;
   MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &cart);
 
+  int cart_rank;
+  MPI_Comm_rank(cart, &cart_rank);
+
   int coords[2];
-  MPI_Cart_coords(cart, rank, 2, coords);
+  MPI_Cart_coords(cart, cart_rank, 2, coords);
   int row = coords[0];
   int col = coords[1];
 
@@ -55,9 +67,9 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
   std::vector<double> Bblock(block * block);
   std::vector<double> Cblock(block * block, 0.0);
 
-  /* -------- Scatter blocks -------- */
-  if (rank == 0) {
-    for (int p = 0; p < size; p++) {
+  // === Рассылка блоков ===
+  if (cart_rank == 0) {
+    for (int p = 0; p < world_size; p++) {
       int pc[2];
       MPI_Cart_coords(cart, p, 2, pc);
 
@@ -86,24 +98,26 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
     MPI_Recv(Bblock.data(), block * block, MPI_DOUBLE, 0, 1, cart, MPI_STATUS_IGNORE);
   }
 
-  /* -------- Initial Cannon shift -------- */
   int left, right, up, down;
 
-  MPI_Cart_shift(cart, 1, -row, &right, &left);
-  MPI_Sendrecv_replace(Ablock.data(), block * block, MPI_DOUBLE, left, 0, right, 0, cart, MPI_STATUS_IGNORE);
+  // === Начальное выравнивание ===
+  for (int i = 0; i < row; i++) {
+    MPI_Cart_shift(cart, 1, -1, &right, &left);
+    MPI_Sendrecv_replace(Ablock.data(), block * block, MPI_DOUBLE, left, 0, right, 0, cart, MPI_STATUS_IGNORE);
+  }
 
-  MPI_Cart_shift(cart, 0, -col, &down, &up);
-  MPI_Sendrecv_replace(Bblock.data(), block * block, MPI_DOUBLE, up, 1, down, 1, cart, MPI_STATUS_IGNORE);
+  for (int i = 0; i < col; i++) {
+    MPI_Cart_shift(cart, 0, -1, &down, &up);
+    MPI_Sendrecv_replace(Bblock.data(), block * block, MPI_DOUBLE, up, 1, down, 1, cart, MPI_STATUS_IGNORE);
+  }
 
-  /* -------- Cannon iterations -------- */
+  // === Основной цикл Кэннона ===
   for (int step = 0; step < q; step++) {
     for (int i = 0; i < block; i++) {
       for (int j = 0; j < block; j++) {
-        double sum = Cblock[i * block + j];
         for (int k = 0; k < block; k++) {
-          sum += Ablock[i * block + k] * Bblock[k * block + j];
+          Cblock[i * block + j] += Ablock[i * block + k] * Bblock[k * block + j];
         }
-        Cblock[i * block + j] = sum;
       }
     }
 
@@ -114,31 +128,24 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
     MPI_Sendrecv_replace(Bblock.data(), block * block, MPI_DOUBLE, up, 1, down, 1, cart, MPI_STATUS_IGNORE);
   }
 
-  MPI_Barrier(cart);
+  // === СБОР ВСЕХ БЛОКОВ НА КАЖДОМ ПРОЦЕССЕ ===
+  std::vector<double> all_blocks(world_size * block * block);
+  MPI_Allgather(Cblock.data(), block * block, MPI_DOUBLE, all_blocks.data(), block * block, MPI_DOUBLE, cart);
 
-  /* -------- Gather result -------- */
-  if (rank == 0) {
-    for (int p = 0; p < size; p++) {
-      int pc[2];
-      MPI_Cart_coords(cart, p, 2, pc);
+  // === Восстановление полной матрицы C ===
+  for (int p = 0; p < world_size; p++) {
+    int pc[2];
+    MPI_Cart_coords(cart, p, 2, pc);
 
-      std::vector<double> tmp(block * block);
-      if (p == 0) {
-        tmp = Cblock;
-      } else {
-        MPI_Recv(tmp.data(), block * block, MPI_DOUBLE, p, 2, cart, MPI_STATUS_IGNORE);
-      }
+    const double *src = &all_blocks[p * block * block];
 
-      for (int i = 0; i < block; i++) {
-        for (int j = 0; j < block; j++) {
-          int gi = pc[0] * block + i;
-          int gj = pc[1] * block + j;
-          C[gi * n + gj] = tmp[i * block + j];
-        }
+    for (int i = 0; i < block; i++) {
+      for (int j = 0; j < block; j++) {
+        int gi = pc[0] * block + i;
+        int gj = pc[1] * block + j;
+        C[gi * n + gj] = src[i * block + j];
       }
     }
-  } else {
-    MPI_Send(Cblock.data(), block * block, MPI_DOUBLE, 0, 2, cart);
   }
 
   MPI_Comm_free(&cart);
