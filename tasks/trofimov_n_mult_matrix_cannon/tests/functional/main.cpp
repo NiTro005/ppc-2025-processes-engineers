@@ -25,7 +25,6 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
  protected:
   void SetUp() override {
     const auto &param = std::get<static_cast<size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
-
     const std::string &name = std::get<1>(param);
 
     if (name == "n1") {
