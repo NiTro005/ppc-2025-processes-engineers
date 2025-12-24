@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+#include "trofimov_n_mult_matrix_cannon/common/include/common.hpp"
+
 namespace trofimov_n_mult_matrix_cannon {
 
 TrofimovNMultMatrixCanonSEQ::TrofimovNMultMatrixCanonSEQ(const InType &in) {
