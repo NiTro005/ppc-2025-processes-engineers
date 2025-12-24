@@ -14,7 +14,7 @@ namespace trofimov_n_mult_matrix_cannon {
 class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
   void SetUp() override {
-    constexpr int n = 32;
+    constexpr int n = 128;
 
     Matrix A(n * n);
     Matrix B(n * n);
