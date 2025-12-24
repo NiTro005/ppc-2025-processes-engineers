@@ -2,7 +2,7 @@
 
 #include <array>
 #include <cmath>
-#include <cstddef>  // для size_t
+#include <cstddef>
 #include <numeric>
 #include <string>
 #include <tuple>
