@@ -2,7 +2,6 @@
 
 #include <numeric>
 #include <tuple>
-#include <vector>
 
 #include "trofimov_n_mult_matrix_cannon/common/include/common.hpp"
 #include "trofimov_n_mult_matrix_cannon/mpi/include/ops_mpi.hpp"
@@ -14,18 +13,19 @@ namespace trofimov_n_mult_matrix_cannon {
 class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
   void SetUp() override {
-    constexpr int n = 128;
+    constexpr int kN = 128;
 
-    Matrix A(n * n);
-    Matrix B(n * n);
+    Matrix kA(static_cast<Matrix::size_type>(kN) * kN);
+    Matrix kB(static_cast<Matrix::size_type>(kN) * kN);
 
-    std::iota(A.begin(), A.end(), 1.0);
-    std::iota(B.begin(), B.end(), -1.0);
+    std::iota(kA.begin(), kA.end(), 1.0);
+    std::iota(kB.begin(), kB.end(), -1.0);
 
-    input_data_ = std::make_tuple(A, B, n);
+    input_data_ = std::make_tuple(kA, kB, kN);
   }
 
-  bool CheckTestOutputData(OutType &) final {
+  bool CheckTestOutputData(OutType &output_data) final {
+    (void)output_data;
     return true;
   }
 
@@ -34,7 +34,7 @@ class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InT
   }
 
  private:
-  InType input_data_{};
+  InType input_data_;
 };
 
 TEST_P(TrofimovNPerfTestsMultMatrixCanon, RunPerfModes) {

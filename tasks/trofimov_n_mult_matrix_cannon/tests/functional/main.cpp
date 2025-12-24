@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>  // для size_t
 #include <numeric>
 #include <string>
 #include <tuple>
@@ -41,8 +42,8 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
       B_ = {1, 2, 3, 4};
     } else if (name == "n4") {
       n_ = 4;
-      A_.resize(n_ * n_);
-      B_.resize(n_ * n_);
+      A_.resize(static_cast<Matrix::size_type>(n_) * n_);
+      B_.resize(static_cast<Matrix::size_type>(n_) * n_);
       std::iota(A_.begin(), A_.end(), 1.0);
       std::iota(B_.begin(), B_.end(), -1.0);
     } else if (name == "invalid_n") {
@@ -59,15 +60,15 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
   bool CheckTestOutputData(OutType &output) final {
     const auto &[A, B, n] = input_data_;
 
-    if (n <= 0 || A.size() != static_cast<size_t>(n * n) || B.size() != static_cast<size_t>(n * n)) {
+    if (n <= 0 || A.size() != static_cast<size_t>(n) * n || B.size() != static_cast<size_t>(n) * n) {
       return true;
     }
 
-    std::vector<double> expected(n * n, 0.0);
+    std::vector<double> expected(static_cast<size_t>(n) * n, 0.0);
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < n; k++) {
-          expected[i * n + j] += A[i * n + k] * B[k * n + j];
+          expected[(i * n + j)] += A[(i * n + k)] * B[(k * n + j)];
         }
       }
     }
@@ -85,7 +86,7 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
   Matrix A_;
   Matrix B_;
   int n_{0};
-  InType input_data_{};
+  InType input_data_;
 };
 
 TEST_P(TrofimovNFuncTestsMultMatrixCanon, RunFuncTests) {
