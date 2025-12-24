@@ -2,7 +2,9 @@
 
 #include <mpi.h>
 
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <vector>
 
 namespace trofimov_n_mult_matrix_cannon {
@@ -17,127 +19,138 @@ bool TrofimovNMultMatrixCanonMPI::ValidationImpl() {
 }
 
 bool TrofimovNMultMatrixCanonMPI::PreProcessingImpl() {
-  const auto &[_, __, n] = GetInput();
-  if (n > 0) {
-    GetOutput().assign(n * n, 0.0);
+  const auto &[a_vector, b_vector, matrix_size] = GetInput();
+  if (matrix_size > 0) {
+    GetOutput().assign(static_cast<std::size_t>(matrix_size) * static_cast<std::size_t>(matrix_size), 0.0);
   }
   return true;
 }
 
 bool TrofimovNMultMatrixCanonMPI::RunImpl() {
-  const auto &[A, B, n] = GetInput();
-  auto &C = GetOutput();
+  const auto &[matrix_a, matrix_b, matrix_size] = GetInput();
+  auto &result_matrix = GetOutput();
 
-  if (n <= 0) {
+  if (matrix_size <= 0) {
     return true;
   }
 
-  int world_size;
+  int world_size = 0;
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
   int q = static_cast<int>(std::sqrt(world_size));
-  if (q * q != world_size || n % q != 0) {
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        for (int k = 0; k < n; k++) {
-          C[i * n + j] += A[i * n + k] * B[k * n + j];
+  if ((q * q != world_size) || (matrix_size % q != 0)) {
+    for (int i = 0; i < matrix_size; i++) {
+      for (int j = 0; j < matrix_size; j++) {
+        for (int k = 0; k < matrix_size; k++) {
+          result_matrix[(i * matrix_size) + j] += matrix_a[(i * matrix_size) + k] * matrix_b[(k * matrix_size) + j];
         }
       }
     }
     return true;
   }
 
-  int block = n / q;
+  const int block = matrix_size / q;
 
-  int dims[2] = {q, q};
-  int periods[2] = {1, 1};
-  MPI_Comm cart;
-  MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &cart);
+  const std::array<int, 2> dims = {q, q};
+  const std::array<int, 2> periods = {1, 1};
+  MPI_Comm cart = MPI_COMM_NULL;  // Используем MPI_COMM_NULL вместо nullptr
+  MPI_Cart_create(MPI_COMM_WORLD, 2, dims.data(), periods.data(), 1, &cart);
 
-  int cart_rank;
+  int cart_rank = 0;
   MPI_Comm_rank(cart, &cart_rank);
 
-  int coords[2];
-  MPI_Cart_coords(cart, cart_rank, 2, coords);
-  int row = coords[0];
-  int col = coords[1];
+  std::array<int, 2> coords = {0, 0};
+  MPI_Cart_coords(cart, cart_rank, 2, coords.data());
+  const int row = coords[0];
+  const int col = coords[1];
 
-  std::vector<double> Ablock(block * block);
-  std::vector<double> Bblock(block * block);
-  std::vector<double> Cblock(block * block, 0.0);
+  const std::size_t block_size = static_cast<std::size_t>(block) * static_cast<std::size_t>(block);
+  std::vector<double> block_a(block_size);
+  std::vector<double> block_b(block_size);
+  std::vector<double> block_c(block_size, 0.0);
 
   if (cart_rank == 0) {
-    for (int p = 0; p < world_size; p++) {
-      int pc[2];
-      MPI_Cart_coords(cart, p, 2, pc);
+    for (int process = 0; process < world_size; process++) {
+      std::array<int, 2> process_coords = {0, 0};
+      MPI_Cart_coords(cart, process, 2, process_coords.data());
 
-      std::vector<double> Ab(block * block);
-      std::vector<double> Bb(block * block);
+      std::vector<double> local_a(block_size);
+      std::vector<double> local_b(block_size);
 
       for (int i = 0; i < block; i++) {
         for (int j = 0; j < block; j++) {
-          int gi = pc[0] * block + i;
-          int gj = pc[1] * block + j;
-          Ab[i * block + j] = A[gi * n + gj];
-          Bb[i * block + j] = B[gi * n + gj];
+          const int global_i = (process_coords[0] * block) + i;
+          const int global_j = (process_coords[1] * block) + j;
+          local_a[(i * block) + j] = matrix_a[(global_i * matrix_size) + global_j];
+          local_b[(i * block) + j] = matrix_b[(global_i * matrix_size) + global_j];
         }
       }
 
-      if (p == 0) {
-        Ablock = Ab;
-        Bblock = Bb;
+      if (process == 0) {
+        block_a = std::move(local_a);
+        block_b = std::move(local_b);
       } else {
-        MPI_Send(Ab.data(), block * block, MPI_DOUBLE, p, 0, cart);
-        MPI_Send(Bb.data(), block * block, MPI_DOUBLE, p, 1, cart);
+        MPI_Send(local_a.data(), static_cast<int>(block_size), MPI_DOUBLE, process, 0, cart);
+        MPI_Send(local_b.data(), static_cast<int>(block_size), MPI_DOUBLE, process, 1, cart);
       }
     }
   } else {
-    MPI_Recv(Ablock.data(), block * block, MPI_DOUBLE, 0, 0, cart, MPI_STATUS_IGNORE);
-    MPI_Recv(Bblock.data(), block * block, MPI_DOUBLE, 0, 1, cart, MPI_STATUS_IGNORE);
+    MPI_Recv(block_a.data(), static_cast<int>(block_size), MPI_DOUBLE, 0, 0, cart, MPI_STATUS_IGNORE);
+    MPI_Recv(block_b.data(), static_cast<int>(block_size), MPI_DOUBLE, 0, 1, cart, MPI_STATUS_IGNORE);
   }
 
-  int left, right, up, down;
+  int left = 0;
+  int right = 0;
+  int up = 0;
+  int down = 0;
 
   for (int i = 0; i < row; i++) {
     MPI_Cart_shift(cart, 1, -1, &right, &left);
-    MPI_Sendrecv_replace(Ablock.data(), block * block, MPI_DOUBLE, left, 0, right, 0, cart, MPI_STATUS_IGNORE);
+    MPI_Sendrecv_replace(block_a.data(), static_cast<int>(block_size), MPI_DOUBLE, left, 0, right, 0, cart,
+                         MPI_STATUS_IGNORE);
   }
 
   for (int i = 0; i < col; i++) {
     MPI_Cart_shift(cart, 0, -1, &down, &up);
-    MPI_Sendrecv_replace(Bblock.data(), block * block, MPI_DOUBLE, up, 1, down, 1, cart, MPI_STATUS_IGNORE);
+    MPI_Sendrecv_replace(block_b.data(), static_cast<int>(block_size), MPI_DOUBLE, up, 1, down, 1, cart,
+                         MPI_STATUS_IGNORE);
   }
 
   for (int step = 0; step < q; step++) {
     for (int i = 0; i < block; i++) {
       for (int j = 0; j < block; j++) {
         for (int k = 0; k < block; k++) {
-          Cblock[i * block + j] += Ablock[i * block + k] * Bblock[k * block + j];
+          block_c[(i * block) + j] += block_a[(i * block) + k] * block_b[(k * block) + j];
         }
       }
     }
 
     MPI_Cart_shift(cart, 1, -1, &right, &left);
-    MPI_Sendrecv_replace(Ablock.data(), block * block, MPI_DOUBLE, left, 0, right, 0, cart, MPI_STATUS_IGNORE);
+    MPI_Sendrecv_replace(block_a.data(), static_cast<int>(block_size), MPI_DOUBLE, left, 0, right, 0, cart,
+                         MPI_STATUS_IGNORE);
 
     MPI_Cart_shift(cart, 0, -1, &down, &up);
-    MPI_Sendrecv_replace(Bblock.data(), block * block, MPI_DOUBLE, up, 1, down, 1, cart, MPI_STATUS_IGNORE);
+    MPI_Sendrecv_replace(block_b.data(), static_cast<int>(block_size), MPI_DOUBLE, up, 1, down, 1, cart,
+                         MPI_STATUS_IGNORE);
   }
 
-  std::vector<double> all_blocks(world_size * block * block);
-  MPI_Allgather(Cblock.data(), block * block, MPI_DOUBLE, all_blocks.data(), block * block, MPI_DOUBLE, cart);
+  const std::size_t total_blocks_size = static_cast<std::size_t>(world_size) * block_size;
+  std::vector<double> all_blocks(total_blocks_size);
+  MPI_Allgather(block_c.data(), static_cast<int>(block_size), MPI_DOUBLE, all_blocks.data(),
+                static_cast<int>(block_size), MPI_DOUBLE, cart);
 
-  for (int p = 0; p < world_size; p++) {
-    int pc[2];
-    MPI_Cart_coords(cart, p, 2, pc);
+  for (int process = 0; process < world_size; process++) {
+    std::array<int, 2> process_coords = {0, 0};
+    MPI_Cart_coords(cart, process, 2, process_coords.data());
 
-    const double *src = &all_blocks[p * block * block];
+    const std::size_t offset = static_cast<std::size_t>(process) * block_size;
+    const double *src = &all_blocks[offset];
 
     for (int i = 0; i < block; i++) {
       for (int j = 0; j < block; j++) {
-        int gi = pc[0] * block + i;
-        int gj = pc[1] * block + j;
-        C[gi * n + gj] = src[i * block + j];
+        const int global_i = (process_coords[0] * block) + i;
+        const int global_j = (process_coords[1] * block) + j;
+        result_matrix[(global_i * matrix_size) + global_j] = src[(i * block) + j];
       }
     }
   }
