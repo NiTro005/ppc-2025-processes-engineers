@@ -1,5 +1,7 @@
 #include "trofimov_n_mult_matrix_cannon/seq/include/ops_seq.hpp"
 
+#include <cstddef>
+
 namespace trofimov_n_mult_matrix_cannon {
 
 TrofimovNMultMatrixCanonSEQ::TrofimovNMultMatrixCanonSEQ(const InType &in) {
@@ -12,25 +14,25 @@ bool TrofimovNMultMatrixCanonSEQ::ValidationImpl() {
 }
 
 bool TrofimovNMultMatrixCanonSEQ::PreProcessingImpl() {
-  const auto &[_, __, n] = GetInput();
-  if (n > 0) {
-    GetOutput().assign(n * n, 0.0);
+  const auto &[a_vector, b_vector, matrix_size] = GetInput();
+  if (matrix_size > 0) {
+    GetOutput().assign(static_cast<std::size_t>(matrix_size) * static_cast<std::size_t>(matrix_size), 0.0);
   }
   return true;
 }
 
 bool TrofimovNMultMatrixCanonSEQ::RunImpl() {
-  const auto &[A, B, n] = GetInput();
-  auto &C = GetOutput();
+  const auto &[matrix_a, matrix_b, matrix_size] = GetInput();
+  auto &result_matrix = GetOutput();
 
-  if (n <= 0) {
+  if (matrix_size <= 0) {
     return true;
   }
 
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      for (int k = 0; k < n; k++) {
-        C[i * n + j] += A[i * n + k] * B[k * n + j];
+  for (int i = 0; i < matrix_size; i++) {
+    for (int j = 0; j < matrix_size; j++) {
+      for (int k = 0; k < matrix_size; k++) {
+        result_matrix[(i * matrix_size) + j] += matrix_a[(i * matrix_size) + k] * matrix_b[(k * matrix_size) + j];
       }
     }
   }
