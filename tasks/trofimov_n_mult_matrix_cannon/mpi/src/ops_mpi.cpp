@@ -12,6 +12,8 @@
 
 namespace trofimov_n_mult_matrix_cannon {
 
+namespace {
+
 void MultiplySequential(const std::vector<double> &a, const std::vector<double> &b, int n,
                         std::vector<double> &result) {
   for (int i = 0; i < n; i++) {
@@ -143,6 +145,8 @@ void GatherResult(MPI_Comm cart, int world_size, int block, int matrix_size, con
     }
   }
 }
+
+}  // namespace
 
 TrofimovNMultMatrixCanonMPI::TrofimovNMultMatrixCanonMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
