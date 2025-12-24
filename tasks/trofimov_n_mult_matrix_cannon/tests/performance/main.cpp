@@ -26,7 +26,6 @@ class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InT
   }
 
   bool CheckTestOutputData(OutType &) final {
-    // В perf-тестах не проверяем корректность результата
     return true;
   }
 

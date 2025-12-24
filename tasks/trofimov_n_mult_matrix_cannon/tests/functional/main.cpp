@@ -60,7 +60,7 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
     const auto &[A, B, n] = input_data_;
 
     if (n <= 0 || A.size() != static_cast<size_t>(n * n) || B.size() != static_cast<size_t>(n * n)) {
-      return true;  // Validation expected to fail
+      return true;
     }
 
     std::vector<double> expected(n * n, 0.0);
@@ -94,13 +94,9 @@ TEST_P(TrofimovNFuncTestsMultMatrixCanon, RunFuncTests) {
 
 namespace {
 
-const std::array<TestType, 5> kTestParams = {{
-    {{}, "n1"},
-    {{}, "n2_identity"},
-    {{}, "n2_zero"},
-    {{}, "n4"},
-    {{}, "invalid_n"},
-}};
+const std::array<TestType, 5> kTestParams = {TestType{InType{}, "n1"}, TestType{InType{}, "n2_identity"},
+                                             TestType{InType{}, "n2_zero"}, TestType{InType{}, "n4"},
+                                             TestType{InType{}, "invalid_n"}};
 
 const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<TrofimovNMultMatrixCanonMPI, InType>(
                                                kTestParams, PPC_SETTINGS_trofimov_n_mult_matrix_cannon),

@@ -37,7 +37,6 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
 
   int q = static_cast<int>(std::sqrt(world_size));
   if (q * q != world_size || n % q != 0) {
-    // fallback: последовательное умножение
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < n; k++) {
@@ -67,7 +66,6 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
   std::vector<double> Bblock(block * block);
   std::vector<double> Cblock(block * block, 0.0);
 
-  // === Рассылка блоков ===
   if (cart_rank == 0) {
     for (int p = 0; p < world_size; p++) {
       int pc[2];
@@ -100,7 +98,6 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
 
   int left, right, up, down;
 
-  // === Начальное выравнивание ===
   for (int i = 0; i < row; i++) {
     MPI_Cart_shift(cart, 1, -1, &right, &left);
     MPI_Sendrecv_replace(Ablock.data(), block * block, MPI_DOUBLE, left, 0, right, 0, cart, MPI_STATUS_IGNORE);
@@ -111,7 +108,6 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
     MPI_Sendrecv_replace(Bblock.data(), block * block, MPI_DOUBLE, up, 1, down, 1, cart, MPI_STATUS_IGNORE);
   }
 
-  // === Основной цикл Кэннона ===
   for (int step = 0; step < q; step++) {
     for (int i = 0; i < block; i++) {
       for (int j = 0; j < block; j++) {
@@ -128,11 +124,9 @@ bool TrofimovNMultMatrixCanonMPI::RunImpl() {
     MPI_Sendrecv_replace(Bblock.data(), block * block, MPI_DOUBLE, up, 1, down, 1, cart, MPI_STATUS_IGNORE);
   }
 
-  // === СБОР ВСЕХ БЛОКОВ НА КАЖДОМ ПРОЦЕССЕ ===
   std::vector<double> all_blocks(world_size * block * block);
   MPI_Allgather(Cblock.data(), block * block, MPI_DOUBLE, all_blocks.data(), block * block, MPI_DOUBLE, cart);
 
-  // === Восстановление полной матрицы C ===
   for (int p = 0; p < world_size; p++) {
     int pc[2];
     MPI_Cart_coords(cart, p, 2, pc);
