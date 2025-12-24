@@ -33,12 +33,12 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
       B_ = {3.0};
     } else if (name == "n2_identity") {
       n_ = 2;
-      A_ = {1, 0, 0, 1};
-      B_ = {5, 6, 7, 8};
+      A_ = {1.0, 0.0, 0.0, 1.0};
+      B_ = {5.0, 6.0, 7.0, 8.0};
     } else if (name == "n2_zero") {
       n_ = 2;
-      A_ = {0, 0, 0, 0};
-      B_ = {1, 2, 3, 4};
+      A_ = {0.0, 0.0, 0.0, 0.0};
+      B_ = {1.0, 2.0, 3.0, 4.0};
     } else if (name == "n4") {
       n_ = 4;
       A_.resize(static_cast<Matrix::size_type>(n_) * n_);
@@ -64,16 +64,18 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
     }
 
     std::vector<double> expected(static_cast<size_t>(n) * n, 0.0);
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        for (int k = 0; k < n; k++) {
-          expected[(i * n + j)] += A[(i * n + k)] * B[(k * n + j)];
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < n; ++j) {
+        double sum = 0.0;
+        for (int k = 0; k < n; ++k) {
+          sum += A[i * n + k] * B[k * n + j];
         }
+        expected[i * n + j] = sum;
       }
     }
 
     const double eps = 1e-9;
-    for (size_t i = 0; i < expected.size(); i++) {
+    for (size_t i = 0; i < expected.size(); ++i) {
       if (std::fabs(expected[i] - output[i]) > eps) {
         return false;
       }

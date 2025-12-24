@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <numeric>
-#include <ranges>
 #include <tuple>
 
 #include "trofimov_n_mult_matrix_cannon/common/include/common.hpp"
@@ -16,13 +15,14 @@ class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InT
   void SetUp() override {
     constexpr int kN = 128;
 
-    Matrix aMatrix(static_cast<Matrix::size_type>(kN) * kN);
-    Matrix bMatrix(static_cast<Matrix::size_type>(kN) * kN);
+    Matrix a_matrix(static_cast<Matrix::size_type>(kN) * kN);
+    Matrix b_matrix(static_cast<Matrix::size_type>(kN) * kN);
 
-    std::iota(aMatrix.begin(), aMatrix.end(), 1.0);
-    std::iota(bMatrix.begin(), bMatrix.end(), -1.0);
+    // Используем традиционный std::iota без ranges
+    std::iota(a_matrix.begin(), a_matrix.end(), 1.0);
+    std::iota(b_matrix.begin(), b_matrix.end(), -1.0);
 
-    input_data_ = std::make_tuple(aMatrix, bMatrix, kN);
+    input_data_ = std::make_tuple(a_matrix, b_matrix, kN);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
