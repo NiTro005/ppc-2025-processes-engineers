@@ -15,26 +15,28 @@
 
 namespace trofimov_n_mult_matrix_cannon {
 
+namespace {
+
 template <typename Container, typename T>
-void FillIota(Container& container, T start) {
-  for (auto& value : container) {
+void FillIota(Container &container, T start) {
+  for (auto &value : container) {
     value = start;
     ++start;
   }
 }
 
-class TrofimovNFuncTestsMultMatrixCanon
-    : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+}  // namespace
+
+class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
-  static std::string PrintTestParam(const TestType& param) {
+  static std::string PrintTestParam(const TestType &param) {
     return std::get<1>(param);
   }
 
  protected:
   void SetUp() override {
-    const auto& param =
-        std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
-    const std::string& name = std::get<1>(param);
+    const auto &param = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
+    const std::string &name = std::get<1>(param);
 
     if (name == "n1") {
       n_ = 1;
@@ -65,11 +67,10 @@ class TrofimovNFuncTestsMultMatrixCanon
     return input_data_;
   }
 
-  bool CheckTestOutputData(OutType& output) final {
-    const auto& [A, B, n] = input_data_;
+  bool CheckTestOutputData(OutType &output) final {
+    const auto &[A, B, n] = input_data_;
 
-    if (n <= 0 ||
-        A.size() != static_cast<std::size_t>(n) * static_cast<std::size_t>(n) ||
+    if (n <= 0 || A.size() != static_cast<std::size_t>(n) * static_cast<std::size_t>(n) ||
         B.size() != static_cast<std::size_t>(n) * static_cast<std::size_t>(n)) {
       return true;
     }
@@ -108,32 +109,20 @@ TEST_P(TrofimovNFuncTestsMultMatrixCanon, RunFuncTests) {
 
 namespace {
 
-const std::array<TestType, 5> kTestParams = {
-    TestType{InType{}, "n1"},
-    TestType{InType{}, "n2_identity"},
-    TestType{InType{}, "n2_zero"},
-    TestType{InType{}, "n4"},
-    TestType{InType{}, "invalid_n"}};
+const std::array<TestType, 5> kTestParams = {TestType{InType{}, "n1"}, TestType{InType{}, "n2_identity"},
+                                             TestType{InType{}, "n2_zero"}, TestType{InType{}, "n4"},
+                                             TestType{InType{}, "invalid_n"}};
 
-const auto kTestTasksList =
-    std::tuple_cat(
-        ppc::util::AddFuncTask<TrofimovNMultMatrixCanonMPI, InType>(
-            kTestParams, PPC_SETTINGS_trofimov_n_mult_matrix_cannon),
-        ppc::util::AddFuncTask<TrofimovNMultMatrixCanonSEQ, InType>(
-            kTestParams, PPC_SETTINGS_trofimov_n_mult_matrix_cannon));
+const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<TrofimovNMultMatrixCanonMPI, InType>(
+                                               kTestParams, PPC_SETTINGS_trofimov_n_mult_matrix_cannon),
+                                           ppc::util::AddFuncTask<TrofimovNMultMatrixCanonSEQ, InType>(
+                                               kTestParams, PPC_SETTINGS_trofimov_n_mult_matrix_cannon));
 
-const auto kGtestValues =
-    ppc::util::ExpandToValues(kTestTasksList);
+const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
 
-const auto kTestName =
-    TrofimovNFuncTestsMultMatrixCanon::PrintFuncTestName<
-        TrofimovNFuncTestsMultMatrixCanon>;
+const auto kTestName = TrofimovNFuncTestsMultMatrixCanon::PrintFuncTestName<TrofimovNFuncTestsMultMatrixCanon>;
 
-INSTANTIATE_TEST_SUITE_P(
-    MatrixCanonFuncTests,
-    TrofimovNFuncTestsMultMatrixCanon,
-    kGtestValues,
-    kTestName);
+INSTANTIATE_TEST_SUITE_P(MatrixCanonFuncTests, TrofimovNFuncTestsMultMatrixCanon, kGtestValues, kTestName);
 
 }  // namespace
 

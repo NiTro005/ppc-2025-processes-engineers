@@ -1,7 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <cstddef>
-#include <numeric>
 #include <tuple>
 #include <vector>
 
@@ -12,6 +10,8 @@
 
 namespace trofimov_n_mult_matrix_cannon {
 
+namespace {
+
 template <typename Container, typename T>
 void FillIota(Container &container, T start) {
   for (auto &value : container) {
@@ -19,6 +19,8 @@ void FillIota(Container &container, T start) {
     ++start;
   }
 }
+
+}  // namespace
 
 class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
