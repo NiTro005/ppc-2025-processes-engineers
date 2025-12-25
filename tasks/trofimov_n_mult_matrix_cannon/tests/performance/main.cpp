@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <numeric>
 #include <tuple>
+#include <vector>
 
 #include "trofimov_n_mult_matrix_cannon/common/include/common.hpp"
 #include "trofimov_n_mult_matrix_cannon/mpi/include/ops_mpi.hpp"
@@ -9,6 +11,14 @@
 #include "util/include/perf_test_util.hpp"
 
 namespace trofimov_n_mult_matrix_cannon {
+
+template <typename Container, typename T>
+void FillIota(Container &container, T start) {
+  for (auto &value : container) {
+    value = start;
+    ++start;
+  }
+}
 
 class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InType, OutType> {
  protected:
@@ -18,9 +28,8 @@ class TrofimovNPerfTestsMultMatrixCanon : public ppc::util::BaseRunPerfTests<InT
     Matrix a_matrix(static_cast<Matrix::size_type>(kN) * kN);
     Matrix b_matrix(static_cast<Matrix::size_type>(kN) * kN);
 
-    // Используем традиционный std::iota без ranges
-    std::iota(a_matrix.begin(), a_matrix.end(), 1.0);
-    std::iota(b_matrix.begin(), b_matrix.end(), -1.0);
+    FillIota(a_matrix, 1.0);
+    FillIota(b_matrix, -1.0);
 
     input_data_ = std::make_tuple(a_matrix, b_matrix, kN);
   }

@@ -3,7 +3,6 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <numeric>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -16,6 +15,15 @@
 
 namespace trofimov_n_mult_matrix_cannon {
 
+// Кастомная замена std::iota (clang-tidy friendly)
+template <typename Container, typename T>
+void FillIota(Container &container, T start) {
+  for (auto &value : container) {
+    value = start;
+    ++start;
+  }
+}
+
 class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
   static std::string PrintTestParam(const TestType &param) {
@@ -24,7 +32,7 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
 
  protected:
   void SetUp() override {
-    const auto &param = std::get<static_cast<size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
+    const auto &param = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
     const std::string &name = std::get<1>(param);
 
     if (name == "n1") {
@@ -43,8 +51,8 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
       n_ = 4;
       A_.resize(static_cast<Matrix::size_type>(n_) * n_);
       B_.resize(static_cast<Matrix::size_type>(n_) * n_);
-      std::iota(A_.begin(), A_.end(), 1.0);
-      std::iota(B_.begin(), B_.end(), -1.0);
+      FillIota(A_, 1.0);
+      FillIota(B_, -1.0);
     } else if (name == "invalid_n") {
       n_ = 0;
     }
@@ -59,23 +67,25 @@ class TrofimovNFuncTestsMultMatrixCanon : public ppc::util::BaseRunFuncTests<InT
   bool CheckTestOutputData(OutType &output) final {
     const auto &[A, B, n] = input_data_;
 
-    if (n <= 0 || A.size() != static_cast<size_t>(n) * n || B.size() != static_cast<size_t>(n) * n) {
+    if (n <= 0 || A.size() != static_cast<std::size_t>(n) * static_cast<std::size_t>(n) ||
+        B.size() != static_cast<std::size_t>(n) * static_cast<std::size_t>(n)) {
       return true;
     }
 
-    std::vector<double> expected(static_cast<size_t>(n) * n, 0.0);
+    std::vector<double> expected(static_cast<std::size_t>(n) * n, 0.0);
+
     for (int i = 0; i < n; ++i) {
       for (int j = 0; j < n; ++j) {
         double sum = 0.0;
         for (int k = 0; k < n; ++k) {
-          sum += A[i * n + k] * B[k * n + j];
+          sum += A[(i * n) + k] * B[(k * n) + j];
         }
-        expected[i * n + j] = sum;
+        expected[(i * n) + j] = sum;
       }
     }
 
     const double eps = 1e-9;
-    for (size_t i = 0; i < expected.size(); ++i) {
+    for (std::size_t i = 0; i < expected.size(); ++i) {
       if (std::fabs(expected[i] - output[i]) > eps) {
         return false;
       }
